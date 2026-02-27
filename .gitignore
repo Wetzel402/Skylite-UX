@@ -17,6 +17,9 @@ logs
 .DS_Store
 .fleet
 .idea
+.vscode
+.claude
+.worktrees
 tmpclaude-*
 
 # Test coverage
