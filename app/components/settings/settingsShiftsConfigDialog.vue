@@ -42,6 +42,7 @@ type ShiftTemplateSlot = {
   startTime: string;
   endTime: string;
   label?: string | null;
+  color?: string | null;
   defaultPreset?: string;
 };
 
@@ -57,87 +58,15 @@ const SHIFT_TEMPLATES: ShiftTemplate[] = [
   {
     id: "2-2-2",
     label: "2-2-2",
-    description: "2 on, 2 on, 2 off",
+    description: "3 shift types, #On/#Off; defaults Early 5-1, Late 12-8, Nights 7-5, Off×2",
     cycleWeeks: 2,
     slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "08:00", endTime: "13:00", defaultPreset: "morning" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "08:00", endTime: "13:00", defaultPreset: "morning" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "13:00", endTime: "17:00", defaultPreset: "evening" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "13:00", endTime: "17:00", defaultPreset: "evening" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 0, dayOfWeek: 6, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 1, dayOfWeek: 0, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 1, dayOfWeek: 1, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-    ],
-  },
-  {
-    id: "dupont",
-    label: "DuPont",
-    description: "4-week, 2 shift types (Days/Nights)",
-    cycleWeeks: 4,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
-      { weekIndex: 1, dayOfWeek: 1, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
-      { weekIndex: 1, dayOfWeek: 2, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
-      { weekIndex: 1, dayOfWeek: 3, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
-      { weekIndex: 2, dayOfWeek: 5, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
-      { weekIndex: 2, dayOfWeek: 6, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
-      { weekIndex: 3, dayOfWeek: 2, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
-      { weekIndex: 3, dayOfWeek: 3, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
-    ],
-  },
-  {
-    id: "4-on-4-off",
-    label: "4 on 4 off",
-    description: "4 Days, 4 OFF, 4 Nights, 4 OFF",
-    cycleWeeks: 3,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "09:00", endTime: "17:00", defaultPreset: "day-9-17" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "09:00", endTime: "17:00", defaultPreset: "day-9-17" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "09:00", endTime: "17:00", defaultPreset: "day-9-17" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "09:00", endTime: "17:00", defaultPreset: "day-9-17" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 0, dayOfWeek: 6, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 0, dayOfWeek: 0, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 1, dayOfWeek: 1, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 1, dayOfWeek: 2, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 1, dayOfWeek: 3, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 1, dayOfWeek: 4, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 1, dayOfWeek: 5, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 1, dayOfWeek: 6, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 1, dayOfWeek: 0, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 2, dayOfWeek: 1, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 2, dayOfWeek: 2, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-    ],
-  },
-  {
-    id: "12h-days",
-    label: "12-hour days",
-    description: "Mon–Fri 12h day shift",
-    cycleWeeks: 1,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "07:00", endTime: "19:00" },
-    ],
-  },
-  {
-    id: "2-2-4",
-    label: "2-2-4",
-    description: "2 Days, 2 Nights, 4 OFF",
-    cycleWeeks: 2,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "09:00", endTime: "17:00", defaultPreset: "day-9-17" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "09:00", endTime: "17:00", defaultPreset: "day-9-17" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "19:00", endTime: "07:00", defaultPreset: "night" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
-      { weekIndex: 0, dayOfWeek: 6, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
+      { weekIndex: 0, dayOfWeek: 1, startTime: "05:00", endTime: "01:00", defaultPreset: "early" },
+      { weekIndex: 0, dayOfWeek: 2, startTime: "05:00", endTime: "01:00", defaultPreset: "early" },
+      { weekIndex: 0, dayOfWeek: 3, startTime: "12:00", endTime: "20:00", defaultPreset: "late" },
+      { weekIndex: 0, dayOfWeek: 4, startTime: "12:00", endTime: "20:00", defaultPreset: "late" },
+      { weekIndex: 0, dayOfWeek: 5, startTime: "19:00", endTime: "05:00", defaultPreset: "nights-7-5" },
+      { weekIndex: 0, dayOfWeek: 6, startTime: "19:00", endTime: "05:00", defaultPreset: "nights-7-5" },
       { weekIndex: 1, dayOfWeek: 0, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
       { weekIndex: 1, dayOfWeek: 1, startTime: "07:00", endTime: "19:00", defaultPreset: "no-shift" },
     ],
@@ -155,53 +84,43 @@ const SHIFT_TEMPLATES: ShiftTemplate[] = [
     ],
   },
   {
-    id: "3-on-3-off",
-    label: "3 on 3 off",
-    description: "3 working days then 3 off",
-    cycleWeeks: 2,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 0, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 2, startTime: "07:00", endTime: "19:00" },
-    ],
-  },
-  {
     id: "continental-2-2-3",
     label: "Continental 2-2-3",
-    description: "2 on, 2 off, 3 on (2-week)",
+    description: "3 shift types, #On/#Off; Day 9-5, Night 7-5, Midday 11-3, Off",
     cycleWeeks: 2,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 6, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 0, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 3, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 4, startTime: "07:00", endTime: "19:00" },
-    ],
   },
   {
-    id: "7-on-7-off",
-    label: "7 on 7 off",
-    description: "7 days on then 7 off",
+    id: "days-nights-off",
+    label: "Days/Nights/Off",
+    description: "2 shift types, #On/#Off. Edit counts for 4on/4off, 2-2-4, 4D/4N/4Off, 7D/7N/7Off, etc.",
     cycleWeeks: 2,
+  },
+  {
+    id: "dupont",
+    label: "DuPont",
+    description: "4-week, 2 shift types (Days/Nights)",
+    cycleWeeks: 4,
     slots: [
-      { weekIndex: 0, dayOfWeek: 0, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 3, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 6, startTime: "07:00", endTime: "19:00" },
+      { weekIndex: 0, dayOfWeek: 1, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 0, dayOfWeek: 2, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 0, dayOfWeek: 3, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 0, dayOfWeek: 4, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 1, dayOfWeek: 1, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
+      { weekIndex: 1, dayOfWeek: 2, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
+      { weekIndex: 1, dayOfWeek: 3, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
+      { weekIndex: 1, dayOfWeek: 5, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 1, dayOfWeek: 6, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 1, dayOfWeek: 0, startTime: "19:00", endTime: "07:00", label: "Night", defaultPreset: "night" },
+      { weekIndex: 2, dayOfWeek: 3, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
+      { weekIndex: 2, dayOfWeek: 4, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
+      { weekIndex: 2, dayOfWeek: 5, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
+      { weekIndex: 2, dayOfWeek: 6, startTime: "09:00", endTime: "17:00", label: "Day", defaultPreset: "day-9-17" },
     ],
   },
   {
     id: "nights-only",
     label: "Nights only",
-    description: "Mon–Fri night shift",
+    description: "#Nights, #Off; 4 Nights, 4 Off",
     cycleWeeks: 1,
     slots: [
       { weekIndex: 0, dayOfWeek: 1, startTime: "19:00", endTime: "07:00", label: "Night" },
@@ -211,52 +130,35 @@ const SHIFT_TEMPLATES: ShiftTemplate[] = [
       { weekIndex: 0, dayOfWeek: 5, startTime: "19:00", endTime: "07:00", label: "Night" },
     ],
   },
-  {
-    id: "2-on-2-off",
-    label: "2 on 2 off",
-    description: "2 days on, 2 off, repeating",
-    cycleWeeks: 2,
-    slots: [
-      { weekIndex: 0, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 2, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 4, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 0, dayOfWeek: 5, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 0, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 1, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 3, startTime: "07:00", endTime: "19:00" },
-      { weekIndex: 1, dayOfWeek: 4, startTime: "07:00", endTime: "19:00" },
-    ],
-  },
-  {
-    id: "days-nights-off",
-    label: "Days/Nights/Off",
-    description: "4 days, 4 nights, 4 off",
-    cycleWeeks: 2,
-  },
-  { id: "on-off", label: "On/Off", description: "N days on, M days off – any combination" },
+  { id: "on-off", label: "On/Off", description: "1 shift type, #On/#Off. Edit counts for 2on/2off, 7on/7off, 14on/14off, etc." },
   { id: "custom", label: "Custom", description: "Build your own pattern" },
 ];
+
+const DEFAULT_ROTATION_COLOR = "#06b6d4";
 
 type ShiftIntervalPreset = {
   value: string;
   label: string;
   startTime: string | null;
   endTime: string | null;
+  defaultColor?: string;
 };
 
 const SHIFT_INTERVAL_PRESETS: ShiftIntervalPreset[] = [
-  { value: "day", label: "Day (7-7)", startTime: "07:00", endTime: "19:00" },
-  { value: "day-9-17", label: "Days (9-5)", startTime: "09:00", endTime: "17:00" },
-  { value: "nights-7-5", label: "Nights (7-5)", startTime: "19:00", endTime: "05:00" },
-  { value: "early", label: "Early (5-1)", startTime: "05:00", endTime: "01:00" },
-  { value: "late", label: "Late (12-8)", startTime: "12:00", endTime: "20:00" },
-  { value: "midday", label: "Midday (11-3)", startTime: "11:00", endTime: "15:00" },
-  { value: "night", label: "Night (7-7)", startTime: "19:00", endTime: "07:00" },
-  { value: "morning", label: "Morning (8-1)", startTime: "08:00", endTime: "13:00" },
-  { value: "evening", label: "Evening (1-5)", startTime: "13:00", endTime: "17:00" },
-  { value: "am", label: "AM (6-2)", startTime: "06:00", endTime: "14:00" },
-  { value: "long-day", label: "Long Day (7-9)", startTime: "07:00", endTime: "21:00" },
-  { value: "no-shift", label: "No shift", startTime: null, endTime: null },
+  { value: "early", label: "Early (5-1)", startTime: "05:00", endTime: "13:00", defaultColor: "#D4A017" },
+  { value: "am", label: "AM (6-2)", startTime: "06:00", endTime: "14:00", defaultColor: "#DDAC24" },
+  { value: "day-12hr", label: "Day (7-7)", startTime: "07:00", endTime: "19:00", defaultColor: "#A8A8A8" },
+  { value: "long-day", label: "Long Day (7-9)", startTime: "07:00", endTime: "21:00", defaultColor: "#E4A8F2" },
+  { value: "morning", label: "Morning (8-1)", startTime: "08:00", endTime: "13:00", defaultColor: "#C9A227" },
+  { value: "day-9-17", label: "Days (9-5)", startTime: "09:00", endTime: "17:00", defaultColor: "#FDF2D0" },
+  { value: "midday", label: "Midday (11-3)", startTime: "11:00", endTime: "15:00", defaultColor: "#B9E3F5" },
+  { value: "late", label: "Late (12-8)", startTime: "12:00", endTime: "20:00", defaultColor: "#98F5AA" },
+  { value: "evening", label: "Evening (1-5)", startTime: "13:00", endTime: "17:00", defaultColor: "#E57E3B" },
+  { value: "swing", label: "Swing (2-10)", startTime: "14:00", endTime: "22:00", defaultColor: "#7AE892" },
+  { value: "nights-7-5", label: "Nights (7-5)", startTime: "19:00", endTime: "05:00", defaultColor: "#7F8FF7" },
+  { value: "night", label: "Night (7-7)", startTime: "19:00", endTime: "07:00", defaultColor: "#8B9AF8" },
+  { value: "graveyard", label: "Graveyard (11-7)", startTime: "23:00", endTime: "07:00", defaultColor: "#6B7BED" },
+  { value: "no-shift", label: "No shift", startTime: null, endTime: null, defaultColor: "#F5F5F5" },
   { value: "custom", label: "Custom", startTime: null, endTime: null },
 ];
 
@@ -264,6 +166,7 @@ type PatternSegment = {
   label: string;
   count: number;
   preset: string;
+  color?: string | null;
 };
 
 const SEGMENT_DEFAULTS: Record<string, PatternSegment[]> = {
@@ -272,8 +175,8 @@ const SEGMENT_DEFAULTS: Record<string, PatternSegment[]> = {
     { label: "OFF", count: 3, preset: "no-shift" },
   ],
   "2-2-2": [
-    { label: "Shift 1", count: 2, preset: "morning" },
-    { label: "Shift 2", count: 2, preset: "evening" },
+    { label: "Shift 1", count: 2, preset: "early" },
+    { label: "Shift 2", count: 2, preset: "late" },
     { label: "Shift 3", count: 2, preset: "nights-7-5" },
     { label: "OFF", count: 2, preset: "no-shift" },
   ],
@@ -281,49 +184,31 @@ const SEGMENT_DEFAULTS: Record<string, PatternSegment[]> = {
     { label: "Shift 1", count: 4, preset: "day" },
     { label: "OFF", count: 4, preset: "no-shift" },
   ],
-  "2-2-4": [
-    { label: "Shift 1", count: 2, preset: "day-9-17" },
-    { label: "Shift 2", count: 2, preset: "nights-7-5" },
-    { label: "OFF", count: 4, preset: "no-shift" },
-  ],
-  "4-on-4-off": [
-    { label: "Shift 1", count: 4, preset: "day-9-17" },
-    { label: "OFF", count: 4, preset: "no-shift" },
-    { label: "Shift 2", count: 4, preset: "nights-7-5" },
-    { label: "OFF", count: 4, preset: "no-shift" },
-  ],
-  "7-on-7-off": [
-    { label: "Shift 1", count: 7, preset: "day" },
-    { label: "OFF", count: 7, preset: "no-shift" },
-  ],
   "days-nights-off": [
     { label: "Shift 1", count: 4, preset: "day-9-17" },
-    { label: "Shift 2", count: 4, preset: "nights-7-5" },
     { label: "OFF", count: 4, preset: "no-shift" },
-  ],
-  "3-on-3-off": [
-    { label: "Shift 1", count: 3, preset: "day" },
-    { label: "OFF", count: 3, preset: "no-shift" },
-  ],
-  "2-on-2-off": [
-    { label: "Shift 1", count: 2, preset: "day" },
-    { label: "OFF", count: 2, preset: "no-shift" },
-  ],
-  "12h-days": [
-    { label: "Shift 1", count: 5, preset: "day" },
+    { label: "Shift 3", count: 4, preset: "nights-7-5" },
+    { label: "OFF", count: 4, preset: "no-shift" },
   ],
   "nights-only": [
-    { label: "Shift 1", count: 5, preset: "night" },
+    { label: "Shift 1", count: 4, preset: "nights-7-5" },
+    { label: "OFF", count: 4, preset: "no-shift" },
+  ],
+  "continental-2-2-3": [
+    { label: "Shift 1", count: 2, preset: "day-9-17" },
+    { label: "OFF", count: 2, preset: "no-shift" },
+    { label: "Shift 2", count: 2, preset: "nights-7-5" },
+    { label: "Shift 3", count: 1, preset: "midday" },
   ],
   "dupont": [
-    { label: "Shift 1", count: 4, preset: "night" },
-    { label: "OFF", count: 4, preset: "no-shift" },
-    { label: "Shift 3", count: 3, preset: "day-9-17" },
+    { label: "Shift 1", count: 4, preset: "nights-7-5" },
     { label: "OFF", count: 3, preset: "no-shift" },
-    { label: "Shift 5", count: 2, preset: "night" },
-    { label: "OFF", count: 2, preset: "no-shift" },
-    { label: "Shift 7", count: 2, preset: "day-9-17" },
-    { label: "OFF", count: 2, preset: "no-shift" },
+    { label: "Shift 3", count: 3, preset: "day-9-17" },
+    { label: "OFF", count: 1, preset: "no-shift" },
+    { label: "Shift 1", count: 3, preset: "nights-7-5" },
+    { label: "OFF", count: 3, preset: "no-shift" },
+    { label: "Shift 3", count: 4, preset: "day-9-17" },
+    { label: "OFF", count: 7, preset: "no-shift" },
   ],
   "custom": [
     { label: "Shift 1", count: 1, preset: "day-9-17" },
@@ -395,68 +280,86 @@ const selectedTemplate = computed(() =>
 );
 
 const editingAssignmentId = ref<string | null>(null);
+
+type EditingSlot = {
+  id: string;
+  weekIndex: number;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  label: string | null;
+  color: string | null;
+  order: number;
+};
+const editingRotationSlots = ref<EditingSlot[]>([]);
+
 const formStartDate = ref<DateValue>(getDefaultDateToday() as DateValue);
 const formEndDate = ref<DateValue | null>(null);
 
-const rotations = ref<Array<{
+type RotationsItem = {
   id: string;
   name: string;
   cycleWeeks: number;
   color: string | null;
   order: number;
   _count?: { slots: number; assignments: number };
-}>>([]);
-const assignments = ref<Array<{
+};
+type AssignmentsItem = {
   id: string;
-  userId: string;
+  userId: string | null;
   shiftRotationId: string;
   startDate: string;
   endDate: string | null;
-  user: { id: string; name: string; avatar: string | null; color: string | null };
+  user: { id: string; name: string; avatar: string | null; color: string | null } | null;
   shiftRotation: { id: string; name: string; cycleWeeks: number; color: string | null };
-}>>([]);
-const loading = ref(false);
-const error = ref<string | null>(null);
+};
 
-async function fetchRotations() {
-  if (!props.integration?.id)
-    return;
-  try {
-    const data = await $fetch(`/api/integrations/${props.integration.id}/shifts/rotations`);
-    rotations.value = data as typeof rotations.value;
-  }
-  catch (e) {
-    error.value = e instanceof Error ? e.message : "Failed to load rotations";
-  }
-}
+const shiftsIntegrationId = props.integration?.id ?? "none";
+const rotationsKey = `shifts-rotations-${shiftsIntegrationId}`;
+const assignmentsKey = `shifts-assignments-${shiftsIntegrationId}`;
 
-async function fetchAssignments() {
-  if (!props.integration?.id)
-    return;
-  try {
-    const data = await $fetch(`/api/integrations/${props.integration.id}/shifts/assignments`);
-    assignments.value = data as typeof assignments.value;
-  }
-  catch (e) {
-    error.value = e instanceof Error ? e.message : "Failed to load assignments";
-  }
-}
+const { refresh: refreshRotations, error: rotationsFetchError } = useAsyncData(
+  rotationsKey,
+  () => (props.integration?.id
+    ? $fetch<RotationsItem[]>(`/api/integrations/${props.integration.id}/shifts/rotations`)
+    : Promise.resolve([])),
+  { lazy: true, server: false },
+);
+
+const { refresh: refreshAssignments, error: assignmentsFetchError } = useAsyncData(
+  assignmentsKey,
+  () => (props.integration?.id
+    ? $fetch<AssignmentsItem[]>(`/api/integrations/${props.integration.id}/shifts/assignments`)
+    : Promise.resolve([])),
+  { lazy: true, server: false },
+);
+
+const { data: rotationsData } = useNuxtData<RotationsItem[]>(rotationsKey);
+const { data: assignmentsData } = useNuxtData<AssignmentsItem[]>(assignmentsKey);
+
+const rotations = computed(() => rotationsData.value ?? []);
+const assignments = computed(() => assignmentsData.value ?? []);
 
 watch(
-  () => [props.isOpen, props.integration?.id],
-  async ([isOpen, id]) => {
-    if (isOpen && id) {
-      loading.value = true;
-      error.value = null;
-      await Promise.all([fetchRotations(), fetchAssignments()]);
-      loading.value = false;
+  [() => props.isOpen, () => props.integration?.id],
+  ([isOpen, id]) => {
+    if (isOpen && id && (rotationsData.value == null || assignmentsData.value == null)) {
+      refreshRotations();
+      refreshAssignments();
     }
   },
+  { immediate: true },
+);
+
+const error = ref<string | null>(null);
+const displayError = computed(
+  () => error.value
+    ?? (rotationsFetchError.value ? (rotationsFetchError.value instanceof Error ? rotationsFetchError.value.message : "Failed to load rotations") : null)
+    ?? (assignmentsFetchError.value ? (assignmentsFetchError.value instanceof Error ? assignmentsFetchError.value.message : "Failed to load assignments") : null),
 );
 
 const newRotationName = ref("");
 const newRotationCycleWeeks = ref(2);
-const newRotationColor = ref("#06b6d4");
 const onOffOnDays = ref(4);
 const onOffOffDays = ref(4);
 
@@ -500,7 +403,12 @@ const showShiftTimeInputs = computed(() => {
 function initEditableSegments() {
   const id = selectedTemplateId.value;
   const defaults = SEGMENT_DEFAULTS[id];
-  editableSegments.value = defaults ? defaults.map(s => ({ ...s })) : [];
+  editableSegments.value = defaults
+    ? defaults.map(s => ({
+        ...s,
+        color: s.color ?? SHIFT_INTERVAL_PRESETS.find(p => p.value === s.preset)?.defaultColor ?? null,
+      }))
+    : [];
   const newCustomTimes: typeof customSegmentTimes.value = {};
   editableSegments.value.forEach((seg, idx) => {
     if (seg.preset === "custom" && !customSegmentTimes.value[idx]) {
@@ -546,13 +454,8 @@ const preferredStartDay = computed<number | null>(() => {
   const id = selectedTemplateId.value;
   if (id === "dupont" || id === "custom" || !id)
     return null;
-  if (isSegmentBasedTemplate.value) {
-    if (id === "7-on-7-off")
-      return 0;
+  if (isSegmentBasedTemplate.value)
     return 1;
-  }
-  if (id === "7-on-7-off")
-    return 0;
   const slots = selectedTemplate.value?.slots;
   if (!slots?.length)
     return null;
@@ -658,33 +561,34 @@ function buildSlotsFromPresets(
       dayOfWeek: g.dayOfWeek,
       startTime: times.startTime,
       endTime: times.endTime,
-      label: preset?.label !== "Day (12h)" ? preset?.label ?? undefined : undefined,
+      label: preset?.value !== "day-12hr" ? preset?.label ?? undefined : undefined,
+      color: preset?.defaultColor ?? DEFAULT_ROTATION_COLOR,
     });
   }
   return slots;
 }
 
-function segmentsToSlots(segments: PatternSegment[], startDate: DateValue): ShiftTemplateSlot[] {
+function segmentsToSlots(segments: PatternSegment[], _startDate: DateValue): ShiftTemplateSlot[] {
   const slots: ShiftTemplateSlot[] = [];
   let dayIndex = 0;
-  const d0 = startDate as CalendarDate;
   let segmentIndex = 0;
   for (const seg of segments) {
     const count = Math.max(1, Math.min(99, seg.count));
     for (let i = 0; i < count; i++) {
       const weekIndex = Math.floor(dayIndex / 7);
-      const dateAt = d0.add({ days: dayIndex });
-      const dayOfWeek = dateAt.toDate(getLocalTimeZone()).getDay();
+      const dayOfWeek = dayIndex % 7;
       if (seg.preset !== "no-shift") {
         const times = getPresetTimes(seg.preset, segmentIndex);
         if (times) {
           const preset = SHIFT_INTERVAL_PRESETS.find(p => p.value === seg.preset);
+          const slotColor = seg.color ?? preset?.defaultColor ?? DEFAULT_ROTATION_COLOR;
           slots.push({
             weekIndex,
             dayOfWeek,
             startTime: times.startTime,
             endTime: times.endTime,
-            label: preset?.label !== "Day (12h)" && preset?.value !== "custom" ? preset?.label ?? undefined : undefined,
+            label: preset?.value !== "day-12hr" && preset?.value !== "custom" ? preset?.label ?? undefined : undefined,
+            color: slotColor,
           });
         }
       }
@@ -693,6 +597,17 @@ function segmentsToSlots(segments: PatternSegment[], startDate: DateValue): Shif
     segmentIndex++;
   }
   return slots;
+}
+
+function dedupeSlotsByWeekAndDay(slots: ShiftTemplateSlot[]): ShiftTemplateSlot[] {
+  const seen = new Set<string>();
+  return slots.filter(s => {
+    const key = `${s.weekIndex}-${s.dayOfWeek}`;
+    if (seen.has(key))
+      return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 const DUPONT_SLOT_INDEX_TO_SEGMENT_INDEX = [0, 0, 0, 0, 2, 2, 2, 4, 4, 6, 6];
@@ -714,12 +629,14 @@ function dupontSegmentsToSlots(
     if (!times)
       continue;
     const preset = SHIFT_INTERVAL_PRESETS.find(p => p.value === seg.preset);
+    const slotColor = seg.color ?? preset?.defaultColor ?? DEFAULT_ROTATION_COLOR;
     slots.push({
       weekIndex: originalSlot.weekIndex,
       dayOfWeek: originalSlot.dayOfWeek,
       startTime: times.startTime,
       endTime: times.endTime,
-      label: preset?.label !== "Day (12h)" && preset?.value !== "custom" ? preset?.label ?? undefined : originalSlot.label ?? undefined,
+      label: preset?.value !== "day-12hr" && preset?.value !== "custom" ? preset?.label ?? undefined : originalSlot.label ?? undefined,
+      color: slotColor,
     });
   }
   return slots;
@@ -735,10 +652,23 @@ function updateSegmentCount(index: number, value: number | string) {
   editableSegments.value = next;
 }
 
-function updateSegmentPreset(index: number, preset: string) {
+function updateSegmentColor(index: number, color: string | null) {
   const next = [...editableSegments.value];
   if (next[index])
-    next[index] = { ...next[index]!, preset };
+    next[index] = { ...next[index]!, color: color || null };
+  editableSegments.value = next;
+}
+
+function updateSegmentPreset(index: number, preset: string) {
+  const next = [...editableSegments.value];
+  if (next[index]) {
+    const presetObj = SHIFT_INTERVAL_PRESETS.find(p => p.value === preset);
+    next[index] = {
+      ...next[index]!,
+      preset,
+      color: presetObj?.defaultColor ?? null,
+    };
+  }
   editableSegments.value = next;
   if (preset === "custom" && !customSegmentTimes.value[index]) {
     customSegmentTimes.value = {
@@ -834,7 +764,6 @@ function closeForm() {
   selectedTemplateId.value = "";
   newRotationName.value = "";
   newRotationCycleWeeks.value = 2;
-  newRotationColor.value = "#06b6d4";
   onOffOnDays.value = 4;
   onOffOffDays.value = 4;
   editableSegments.value = [];
@@ -849,6 +778,7 @@ function closeForm() {
   formStartDate.value = getDefaultDateToday();
   formEndDate.value = null;
   editingAssignmentId.value = null;
+  editingRotationSlots.value = [];
 }
 
 function prefillShiftTimes() {
@@ -989,26 +919,71 @@ function validateShiftTimes(): string | null {
   return null;
 }
 
-function openEditForm(a: typeof assignments.value[0]) {
+async function openEditForm(a: typeof assignments.value[0]) {
   editingAssignmentId.value = a.id;
   selectedTemplateId.value = "";
   newRotationName.value = a.shiftRotation.name;
-  newRotationColor.value = a.shiftRotation.color ?? "#06b6d4";
   formStartDate.value = parseDate(new Date(a.startDate).toLocaleDateString("en-CA"));
   formEndDate.value = a.endDate
     ? parseDate(new Date(a.endDate).toLocaleDateString("en-CA"))
     : null;
+  editingRotationSlots.value = [];
+  const integrationId = props.integration?.id;
+  if (integrationId) {
+    const rotation = await $fetch<{ slots: EditingSlot[] }>(
+      `/api/integrations/${integrationId}/shifts/rotations/${a.shiftRotationId}`,
+    );
+    editingRotationSlots.value = (rotation.slots ?? []).map(slot => ({
+      id: slot.id,
+      weekIndex: slot.weekIndex,
+      dayOfWeek: slot.dayOfWeek,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      label: slot.label ?? null,
+      color: slot.color ?? null,
+      order: slot.order,
+    }));
+  }
+}
+
+const editingSlotTypes = computed(() => {
+  const slots = editingRotationSlots.value;
+  const keyToIndices = new Map<string, number[]>();
+  slots.forEach((slot, idx) => {
+    const key = `${slot.label ?? ""}-${slot.startTime}-${slot.endTime}`;
+    const list = keyToIndices.get(key) ?? [];
+    list.push(idx);
+    keyToIndices.set(key, list);
+  });
+  return Array.from(keyToIndices.entries()).map(([key, indices]) => {
+    const first = slots[indices[0]!];
+    return {
+      key,
+      label: first?.label ?? `Week ${first?.weekIndex} Day ${first?.dayOfWeek} • ${first?.startTime}–${first?.endTime}`,
+      startTime: first?.startTime ?? "",
+      endTime: first?.endTime ?? "",
+      color: first?.color ?? null,
+      indices,
+    };
+  });
+});
+
+function updateEditingSlotTypeColor(typeIndex: number, color: string | null) {
+  const type = editingSlotTypes.value[typeIndex];
+  if (!type)
+    return;
+  const next = [...editingRotationSlots.value];
+  for (const idx of type.indices) {
+    if (next[idx])
+      next[idx] = { ...next[idx]!, color: color ?? null };
+  }
+  editingRotationSlots.value = next;
 }
 
 async function saveConfiguredShift() {
   const integrationId = props.integration?.id;
-  const userId = integrationOwnerUserId.value;
   if (!integrationId) {
     error.value = "Integration not set.";
-    return;
-  }
-  if (!userId) {
-    error.value = "Select a user for this integration in Settings first.";
     return;
   }
   if (!selectedTemplateId.value && !editingAssignmentId.value) {
@@ -1046,7 +1021,7 @@ async function saveConfiguredShift() {
           method: "PUT",
           body: {
             name: newRotationName.value.trim() || a.shiftRotation.name,
-            color: newRotationColor.value,
+            color: a.shiftRotation.color ?? DEFAULT_ROTATION_COLOR,
           },
         },
       );
@@ -1064,6 +1039,12 @@ async function saveConfiguredShift() {
           },
         },
       );
+      for (const slot of editingRotationSlots.value) {
+        await $fetch(
+          `/api/integrations/${integrationId}/shifts/rotations/${a.shiftRotationId}/slots/${slot.id}`,
+          { method: "PUT", body: { color: slot.color ?? null } },
+        );
+      }
     }
     else {
       const template = selectedTemplate.value;
@@ -1100,13 +1081,14 @@ async function saveConfiguredShift() {
           body: {
             name,
             cycleWeeks,
-            color: newRotationColor.value,
+            color: slots?.[0]?.color ?? DEFAULT_ROTATION_COLOR,
             order: rotations.value.length,
           },
         },
       );
       if (slots?.length) {
-        await Promise.all(slots.map((slot, i) =>
+        const dedupedSlots = dedupeSlotsByWeekAndDay(slots);
+        await Promise.all(dedupedSlots.map((slot, i) =>
           $fetch(
             `/api/integrations/${integrationId}/shifts/rotations/${rotation.id}/slots`,
             {
@@ -1117,6 +1099,7 @@ async function saveConfiguredShift() {
                 startTime: slot.startTime,
                 endTime: slot.endTime,
                 label: slot.label ?? null,
+                color: slot.color ?? null,
                 order: i,
               },
             },
@@ -1128,7 +1111,7 @@ async function saveConfiguredShift() {
       await $fetch(`/api/integrations/${integrationId}/shifts/assignments`, {
         method: "POST",
         body: {
-          userId,
+          userId: integrationOwnerUserId.value ?? null,
           shiftRotationId: rotation.id,
           startDate: new Date(Date.UTC(startD.year, startD.month - 1, startD.day, 0, 0, 0, 0)).toISOString(),
           endDate: endD
@@ -1137,7 +1120,7 @@ async function saveConfiguredShift() {
         },
       });
     }
-    await Promise.all([fetchRotations(), fetchAssignments()]);
+    await Promise.all([refreshRotations(), refreshAssignments()]);
     closeForm();
     await triggerImmediateSync("calendar", integrationId);
   }
@@ -1154,7 +1137,7 @@ async function deleteConfiguredShift(assignmentId: string) {
       `/api/integrations/${props.integration.id}/shifts/assignments/${assignmentId}`,
       { method: "DELETE" },
     );
-    await fetchAssignments();
+    await refreshAssignments();
     if (editingAssignmentId.value === assignmentId)
       closeForm();
     await triggerImmediateSync("calendar", props.integration.id);
@@ -1189,25 +1172,15 @@ async function deleteConfiguredShift(assignmentId: string) {
       </div>
 
       <div class="p-4 space-y-6">
-        <div v-if="error" class="bg-error/10 text-error rounded-md px-3 py-2 text-sm">
-          {{ error }}
+        <div v-if="displayError" class="bg-error/10 text-error rounded-md px-3 py-2 text-sm">
+          {{ displayError }}
         </div>
 
-        <div v-if="loading" class="flex justify-center py-8">
-          <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8" />
-        </div>
-
-        <template v-else>
-          <div>
+        <div>
+          <div v-if="!editingAssignmentId">
             <h4 class="font-medium text-highlighted mb-2">
               Add shift
             </h4>
-            <p
-              v-if="!integrationOwnerUserId"
-              class="text-sm text-muted mb-4"
-            >
-              Select a user for this integration in the integration settings first.
-            </p>
             <div class="mb-4 p-4 rounded-lg border border-default space-y-4">
               <div class="space-y-2">
                 <label class="block text-sm font-medium text-highlighted">Patterns</label>
@@ -1235,7 +1208,7 @@ async function deleteConfiguredShift(assignmentId: string) {
                   {{ selectedTemplate.description }}
                 </p>
               </div>
-              <template v-if="selectedTemplateId || editingAssignmentId">
+              <template v-if="selectedTemplateId && !editingAssignmentId">
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-highlighted">Starts</label>
                   <UPopover>
@@ -1294,6 +1267,30 @@ async function deleteConfiguredShift(assignmentId: string) {
                         class="min-w-[140px]"
                         @update:model-value="(v: string) => updateSegmentPreset(idx, v)"
                       />
+                      <UPopover v-if="seg.preset !== 'no-shift'">
+                        <UButton
+                          color="neutral"
+                          variant="outline"
+                          size="sm"
+                          aria-label="Segment color"
+                        >
+                          <template #leading>
+                            <span
+                              :style="{
+                                backgroundColor: seg.color ?? (SHIFT_INTERVAL_PRESETS.find(p => p.value === seg.preset)?.defaultColor ?? DEFAULT_ROTATION_COLOR),
+                              }"
+                              class="size-3 rounded-full"
+                            />
+                          </template>
+                        </UButton>
+                        <template #content>
+                          <UColorPicker
+                            :model-value="seg.color ?? (SHIFT_INTERVAL_PRESETS.find(p => p.value === seg.preset)?.defaultColor ?? DEFAULT_ROTATION_COLOR)"
+                            class="p-2"
+                            @update:model-value="(v: string | undefined) => updateSegmentColor(idx, v ?? null)"
+                          />
+                        </template>
+                      </UPopover>
                       <div
                         v-if="seg.preset === 'custom'"
                         class="flex items-center gap-1 text-xs text-muted"
@@ -1415,31 +1412,9 @@ async function deleteConfiguredShift(assignmentId: string) {
                     placeholder="Pattern name"
                     class="w-full"
                   />
-                  <p v-if="!editingAssignmentId" class="text-sm text-muted">
+                  <p class="text-sm text-muted">
                     Optional: If not provided, a name will be generated.
                   </p>
-                </div>
-                <div class="space-y-2">
-                  <label class="block text-sm font-medium text-highlighted">Color</label>
-                  <UPopover>
-                    <UButton
-                      label="Choose color"
-                      color="neutral"
-                      variant="outline"
-                    >
-                      <template #leading>
-                        <span
-                          :style="{
-                            backgroundColor: newRotationColor || '#06b6d4',
-                          }"
-                          class="size-3 rounded-full"
-                        />
-                      </template>
-                    </UButton>
-                    <template #content>
-                      <UColorPicker v-model="newRotationColor" class="p-2" />
-                    </template>
-                  </UPopover>
                 </div>
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-highlighted">End date (optional)</label>
@@ -1476,21 +1451,21 @@ async function deleteConfiguredShift(assignmentId: string) {
                     variant="ghost"
                     @click="closeForm"
                   >
-                    {{ editingAssignmentId ? "Cancel" : "Clear" }}
+                    Clear
                   </UButton>
                 </div>
               </template>
             </div>
+          </div>
 
+          <template v-if="!selectedTemplateId || editingAssignmentId">
             <h4 class="font-medium text-highlighted mb-2">
               Configured shifts
             </h4>
-            <p class="text-sm text-muted mb-4">
-              Your configured shift patterns and date ranges. Edit or delete via the buttons.
-            </p>
             <div class="space-y-4">
               <div
                 v-for="a in assignments"
+                v-show="a.id !== editingAssignmentId"
                 :key="a.id"
                 class="flex items-center justify-between p-4 rounded-lg border border-default"
               >
@@ -1498,7 +1473,7 @@ async function deleteConfiguredShift(assignmentId: string) {
                   <div
                     class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                     :style="{
-                      backgroundColor: a.shiftRotation.color ?? '#06b6d4',
+                      backgroundColor: a.shiftRotation.color ?? DEFAULT_ROTATION_COLOR,
                     }"
                   />
                   <div>
@@ -1534,9 +1509,131 @@ async function deleteConfiguredShift(assignmentId: string) {
               <p v-if="assignments.length === 0" class="text-muted text-sm py-2">
                 No configured shifts yet. Select a pattern and fill the form above to add one.
               </p>
+              <div
+                v-if="editingAssignmentId"
+                class="rounded-lg border border-default p-4 space-y-4"
+              >
+                <h5 class="font-medium text-highlighted">
+                  Editing {{ newRotationName || 'pattern' }}
+                </h5>
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-highlighted">Pattern name</label>
+                  <UInput
+                    v-model="newRotationName"
+                    placeholder="Pattern name"
+                    class="w-full"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-highlighted">Starts</label>
+                  <UPopover>
+                    <UButton
+                      color="neutral"
+                      variant="subtle"
+                      icon="i-lucide-calendar"
+                      class="w-full justify-between"
+                    >
+                      <NuxtTime
+                        v-if="formStartDate"
+                        :datetime="formStartDate.toDate(getLocalTimeZone())"
+                        year="numeric"
+                        month="short"
+                        day="numeric"
+                      />
+                      <span v-else>Select a date</span>
+                    </UButton>
+                    <template #content>
+                      <GlobalDatePicker
+                        :model-value="formStartDateValue"
+                        :is-date-disabled="startDateIsDisabled"
+                        @update:model-value="onStartDateSelect"
+                      />
+                    </template>
+                  </UPopover>
+                </div>
+                <div
+                  v-if="editingSlotTypes.length > 0"
+                  class="space-y-3"
+                >
+                  <label class="block text-sm font-medium text-highlighted">Slot colors</label>
+                  <div class="space-y-2">
+                    <div
+                      v-for="(type, typeIdx) in editingSlotTypes"
+                      :key="type.key"
+                      class="flex flex-wrap items-center gap-2"
+                    >
+                      <span class="text-sm font-medium text-highlighted min-w-[120px]">
+                        {{ type.label || `${type.startTime}–${type.endTime}` }}
+                      </span>
+                      <UPopover>
+                        <UButton
+                          color="neutral"
+                          variant="outline"
+                          size="sm"
+                          aria-label="Slot color"
+                        >
+                          <template #leading>
+                            <span
+                              :style="{
+                                backgroundColor: type.color ?? DEFAULT_ROTATION_COLOR,
+                              }"
+                              class="size-3 rounded-full"
+                            />
+                          </template>
+                        </UButton>
+                        <template #content>
+                          <UColorPicker
+                            :model-value="type.color ?? DEFAULT_ROTATION_COLOR"
+                            class="p-2"
+                            @update:model-value="(v: string | undefined) => updateEditingSlotTypeColor(typeIdx, v ?? null)"
+                          />
+                        </template>
+                      </UPopover>
+                    </div>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-highlighted">End date (optional)</label>
+                  <UPopover>
+                    <UButton
+                      color="neutral"
+                      variant="subtle"
+                      icon="i-lucide-calendar"
+                      class="w-full justify-between"
+                    >
+                      <NuxtTime
+                        v-if="formEndDate"
+                        :datetime="formEndDate.toDate(getLocalTimeZone())"
+                        year="numeric"
+                        month="short"
+                        day="numeric"
+                      />
+                      <span v-else>Select a date</span>
+                    </UButton>
+                    <template #content>
+                      <GlobalDatePicker
+                        :model-value="formEndDateValue"
+                        @update:model-value="(value: DateValue | null) => { formEndDate = value; }"
+                      />
+                    </template>
+                  </UPopover>
+                </div>
+                <div class="flex gap-2">
+                  <UButton size="sm" @click="saveConfiguredShift">
+                    Save
+                  </UButton>
+                  <UButton
+                    size="sm"
+                    variant="ghost"
+                    @click="closeForm"
+                  >
+                    Cancel
+                  </UButton>
+                </div>
+              </div>
             </div>
-          </div>
-        </template>
+          </template>
+        </div>
       </div>
 
       <div class="p-4 border-t border-default">

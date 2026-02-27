@@ -1,6 +1,6 @@
 ---
 description: Vitest testing; unit, nuxt, and e2e projects; mock consola when needed
-globs: "**/*.{test,spec}.ts"
+globs: ["**/*.{test,spec}.ts"]
 alwaysApply: false
 ---
 

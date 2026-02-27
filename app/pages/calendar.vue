@@ -847,7 +847,6 @@ function getEventIntegrationCapabilities(
     <CalendarMainView
       :events="allEvents as CalendarEvent[]"
       :initial-view="initialCalendarView"
-      :show-week-numbers="preferences?.showWeekNumbers ?? false"
       class="h-[calc(100vh-2rem)]"
       :get-integration-capabilities="getEventIntegrationCapabilities"
       @event-add="handleEventAdd"

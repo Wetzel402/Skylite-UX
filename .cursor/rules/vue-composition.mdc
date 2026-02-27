@@ -1,0 +1,12 @@
+---
+description: Vue Composition API and script setup; ref, composables, defineProps/defineEmits
+globs: ["**/*.vue", "app/composables/**"]
+alwaysApply: false
+---
+
+# Vue 3 and Composition API
+
+- Use composition API and declarative patterns; avoid options API.
+- Use `<script setup>` for component definitions; type props and emits with defineProps<T>() and defineEmits.
+- Use ref, reactive, and computed for reactive state.
+- Use provide/inject when appropriate; implement custom composables for reusable logic.

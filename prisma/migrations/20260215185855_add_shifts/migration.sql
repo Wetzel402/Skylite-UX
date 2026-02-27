@@ -21,6 +21,7 @@ CREATE TABLE "shift_slots" (
     "startTime" TEXT NOT NULL,
     "endTime" TEXT NOT NULL,
     "label" TEXT,
+    "color" TEXT,
     "order" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -31,7 +32,7 @@ CREATE TABLE "shift_slots" (
 -- CreateTable
 CREATE TABLE "shift_assignments" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "userId" TEXT,
     "shiftRotationId" TEXT NOT NULL,
     "startDate" TIMESTAMP(3) NOT NULL,
     "endDate" TIMESTAMP(3),

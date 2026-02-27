@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   if (!rotation)
     throw createError({ statusCode: 404, message: "Rotation not found" });
   const body = await readBody(event);
-  const { weekIndex, dayOfWeek, startTime, endTime, label, order } = body;
+  const { weekIndex, dayOfWeek, startTime, endTime, label, color, order } = body;
   if (typeof weekIndex !== "number" || weekIndex < 0)
     throw createError({ statusCode: 400, message: "weekIndex is required and must be >= 0" });
   if (typeof dayOfWeek !== "number" || dayOfWeek < 0 || dayOfWeek > 6)
@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
       startTime: String(startTime).trim(),
       endTime: String(endTime).trim(),
       label: typeof label === "string" ? label.trim() || null : null,
+      color: typeof color === "string" ? color.trim() || null : null,
       order: typeof order === "number" ? order : 0,
     },
   });

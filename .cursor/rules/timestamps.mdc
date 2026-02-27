@@ -1,6 +1,5 @@
 ---
 description: We store timestamps in UTC and use the global TZ when converting timestamps 
-globs:
 alwaysApply: true
 ---
 

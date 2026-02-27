@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { JsonValue } from "type-fest";
+import type { JsonObject, JsonValue } from "type-fest";
 
 import type { CreateIntegrationInput, Integration } from "~/types/database";
 import type {
@@ -315,11 +315,25 @@ async function handleSave() {
       = name.value.trim()
         || generateUniqueName(service.value, props.existingIntegrations);
 
-    const userSelection = settingsData.value.user || [];
-    const hasUsers = Array.isArray(userSelection) && userSelection.length > 0;
-    const useUserColors = hasUsers
-      ? Boolean(settingsData.value.useUserColors)
-      : false;
+    const settings: JsonObject = {};
+    for (const field of currentIntegrationConfig.value?.settingsFields ?? []) {
+      const v = settingsData.value[field.key];
+      if (field.type === "color")
+        settings[field.key] = (v as string) || (field.placeholder as string) || "#06b6d4";
+      else if (field.type === "boolean")
+        settings[field.key] = Boolean(v);
+      else if (field.key === "user")
+        settings[field.key] = (Array.isArray(v) ? v : []) as JsonValue;
+      else
+        settings[field.key] = (typeof v === "string" ? v : (field.placeholder as string) ?? "") as string;
+    }
+    if (
+      props.integration?.id
+      && currentIntegrationConfig.value?.capabilities.includes("select_calendars")
+      && !settingsData.value.clientSecret
+    ) {
+      settings.calendars = ((props.integration.settings as { calendars?: unknown })?.calendars as JsonValue) || [];
+    }
 
     const integrationData: CreateIntegrationInput = {
       name: integrationName,
@@ -329,24 +343,7 @@ async function handleSave() {
       baseUrl: null as string | null,
       icon: null,
       enabled: enabled.value,
-      settings: {
-        user: userSelection,
-        eventColor: settingsData.value.eventColor || "#06b6d4",
-        useUserColors,
-        clientId: settingsData.value.clientId || "",
-        clientSecret: settingsData.value.clientSecret || "",
-        ...(props.integration?.id
-          && currentIntegrationConfig.value?.capabilities.includes(
-            "select_calendars",
-          )
-          && !settingsData.value.clientSecret
-          ? {
-              calendars:
-                ((props.integration.settings as { calendars?: unknown })
-                  ?.calendars as JsonValue) || [],
-            }
-          : {}),
-      },
+      settings,
     };
 
     const config = currentIntegrationConfig.value;

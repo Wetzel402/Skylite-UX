@@ -8,36 +8,6 @@ type ShiftsSettings = {
   useUserColors?: boolean;
 };
 
-function parseTimeToMinutes(timeStr: string): number {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match)
-    return 0;
-  const hours = Number.parseInt(match[1]!, 10);
-  const minutes = Number.parseInt(match[2]!, 10);
-  return hours * 60 + minutes;
-}
-
-function slotTimesToUtc(
-  utcDate: Date,
-  startTime: string,
-  endTime: string,
-): { start: Date; end: Date; allDay: boolean } {
-  const startMin = parseTimeToMinutes(startTime);
-  const endMin = parseTimeToMinutes(endTime);
-  const allDay = startMin === 0 && endMin === 24 * 60;
-  const y = utcDate.getUTCFullYear();
-  const m = utcDate.getUTCMonth();
-  const d = utcDate.getUTCDate();
-  if (allDay) {
-    const start = new Date(Date.UTC(y, m, d, 0, 0, 0, 0));
-    const end = new Date(Date.UTC(y, m, d + 1, 0, 0, 0, 0));
-    return { start, end, allDay: true };
-  }
-  const start = new Date(Date.UTC(y, m, d, Math.floor(startMin / 60), startMin % 60, 0, 0));
-  const end = new Date(Date.UTC(y, m, d, Math.floor(endMin / 60), endMin % 60, 0, 0));
-  return { start, end, allDay: false };
-}
-
 export async function expandShiftsToEvents(
   integrationId: string,
   settings: ShiftsSettings | null,
@@ -79,35 +49,38 @@ export async function expandShiftsToEvents(
         if (t < assignmentStart || t > assignmentEnd)
           continue;
 
-        const weeksSinceStart = Math.floor((t - assignmentStart) / (7 * oneDayMs));
-        const weekIndex = ((weeksSinceStart % cycleWeeks) + cycleWeeks) % cycleWeeks;
-        const dayOfWeek = d.getUTCDay();
+        const daysSince = Math.floor((t - assignmentStart) / oneDayMs);
+        const cycleDays = cycleWeeks * 7;
+        const dayInCycle = ((daysSince % cycleDays) + cycleDays) % cycleDays;
+        const weekIndex = Math.floor(dayInCycle / 7);
+        const dayOfWeek = dayInCycle % 7;
 
         const slotsForDay = rotation.slots.filter(
           s => s.weekIndex === weekIndex && s.dayOfWeek === dayOfWeek,
         );
 
         for (const slot of slotsForDay) {
-          const { start, end, allDay } = slotTimesToUtc(
-            d,
-            slot.startTime,
-            slot.endTime,
-          );
+          const y = d.getUTCFullYear();
+          const m = d.getUTCMonth();
+          const day = d.getUTCDate();
+          const start = new Date(Date.UTC(y, m, day, 0, 0, 0, 0));
+          const end = new Date(Date.UTC(y, m, day + 1, 0, 0, 0, 0));
           const title = slot.label?.trim() || rotation.name;
-          const user = assignment.user;
+          const user = assignment.user ?? null;
           const users = useUserColors && user
             ? [{ id: user.id, name: user.name, avatar: user.avatar, color: user.color }]
             : undefined;
           const color = useUserColors && user?.color
             ? user.color
-            : (rotation.color ?? eventColor);
+            : (slot.color ?? rotation.color ?? eventColor);
 
           events.push({
             id: `shift-${assignment.id}-${slot.id}-${d.getTime()}`,
             title,
+            description: rotation.name,
             start,
             end,
-            allDay,
+            allDay: true,
             color: color ?? eventColor,
             integrationId,
             users,

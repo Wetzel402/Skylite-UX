@@ -130,22 +130,7 @@ export const integrationConfigs: IntegrationConfig[] = [
         placeholder: "Jane Doe",
         required: false,
         description:
-          "Select user(s) to link to shift events or choose an event color",
-      },
-      {
-        key: "eventColor",
-        label: "Event Color",
-        type: "color" as const,
-        placeholder: "#06b6d4",
-        required: false,
-      },
-      {
-        key: "useUserColors",
-        label: "Use User Profile Colors",
-        type: "boolean" as const,
-        required: false,
-        description:
-          "Use assigned user profile colors for events instead of a single event color",
+          "Select user(s) to link to shift events",
       },
     ],
     capabilities: ["get_events"],

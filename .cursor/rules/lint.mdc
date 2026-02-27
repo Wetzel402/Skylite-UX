@@ -1,6 +1,5 @@
 ---
 description: Lint rules are defined in eslint.config.mjs
-globs:
 alwaysApply: true
 ---
 

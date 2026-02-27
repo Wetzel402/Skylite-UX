@@ -1,9 +1,10 @@
 ---
-description: Prefer @nuxt/ui components; use @vueuse/core and project composables
-globs: ["**/*.vue", "composables/**"]
+description: Prefer @nuxt/ui components; use @vueuse/core and project app/composables
+globs: ["**/*.vue", "app/composables/**"]
 alwaysApply: false
 ---
 
 # Vue and Nuxt UI
 
-- Prefer `@nuxt/ui` components where they fit. Use composables from `@vueuse/core` and from project `composables/` when relevant.
+- Prefer `@nuxt/ui` components where they fit. Use composables from `@vueuse/core` and from project `app/composables/` when relevant.
+- Use Tailwind for styling. Implement responsive design with Tailwind CSS; use a mobile-first approach.

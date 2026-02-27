@@ -1,6 +1,6 @@
 ---
 description: Server routes in server/api/; file-based naming; h3 event and typed responses
-globs: "server/**/*.ts"
+globs: ["server/**/*.ts"]
 alwaysApply: false
 ---
 

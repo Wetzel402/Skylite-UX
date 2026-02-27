@@ -1,6 +1,6 @@
 ---
 description: Consider Docker, Proxmox, and HA when changing build/config/runtime
-globs: ["ha-app/**", "**/Dockerfile*", "**/docker-compose*.yml", "repository.yaml", "nuxt.config.ts", "docs/installation/**"]
+globs: ["**/ha-app/**", "**/Dockerfile*", "**/docker-compose*.yml", "**/repository.yaml", "**/nuxt.config.ts", "**/docs/installation/**"]
 alwaysApply: false
 ---
 

@@ -24,7 +24,6 @@ const props = defineProps<{
   className?: string;
   initialView?: CalendarView;
   class?: string;
-  showWeekNumbers?: boolean;
   getIntegrationCapabilities?: (
     event: CalendarEvent,
   ) => { capabilities: string[]; serviceName?: string } | undefined;
@@ -264,7 +263,6 @@ function getDaysForAgenda(date: Date) {
         :show-view-selector="true"
         :current-date="currentDate"
         :view="view"
-        :show-week-numbers="props.showWeekNumbers ?? false"
         @previous="handlePrevious"
         @next="handleNext"
         @today="handleToday"

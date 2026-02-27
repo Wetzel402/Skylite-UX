@@ -1,10 +1,26 @@
 ---
-description: This is a nuxt4 project
-globs:
+description: This project is built with NUXT4 and its technology stack 
 alwaysApply: true
 ---
 
 # Nuxt 4
 
-- Use `#app` for app imports. Use `defineNuxtPlugin`, `useRuntimeConfig`, and composables in `composables/`. Server routes live under `server/api/`.
-- Do not use `process.env` in app or server code; use Nuxt runtime config. Prefer `@nuxt/ui` components where they fit.
+You are an expert in TypeScript, Node.js, NuxtJS, Vue 3, VueUse, and Tailwind.
+
+For UI and styling see vue-nuxt-ui. Follow project lint and reuse rules; prefer types, const objects, arrow functions, descriptive names.
+
+## Nuxt-specific Guidelines
+- Follow Nuxt 4 directory structure (e.g., pages/, components/, composables/ under `app/` in this project).
+- File-based routing in the pages/ directory; server routes in the server/ directory.
+- Leverage Nuxt plugins for global functionality.
+- Use useFetch and useAsyncData for data fetching.
+- Utilize Nuxt's auto-imports for components and composables.
+- Implement SEO best practices using Nuxt's useHead and useSeoMeta.
+
+## Key Conventions
+- Use VueUse for common composables and utility functions; use Pinia for state management.
+
+## Performance
+- Leverage Nuxt's built-in performance optimizations; use Suspense for async components, lazy loading for routes and components. Optimize images: WebP, size data, lazy loading. Optimize Web Vitals (LCP, CLS, FID).
+
+Follow the official Nuxt.js and Vue.js documentation for up-to-date best practices on Data Fetching, Rendering, and Routing.

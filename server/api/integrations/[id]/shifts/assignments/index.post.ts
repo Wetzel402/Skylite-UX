@@ -11,8 +11,8 @@ export default defineEventHandler(async (event) => {
   await ensureShiftsIntegration(integrationId);
   const body = await readBody(event);
   const { userId, shiftRotationId, startDate, endDate } = body;
-  if (!userId || typeof userId !== "string")
-    throw createError({ statusCode: 400, message: "userId is required" });
+  const resolvedUserId
+    = userId != null && typeof userId === "string" ? userId : null;
   if (!shiftRotationId || typeof shiftRotationId !== "string")
     throw createError({ statusCode: 400, message: "shiftRotationId is required" });
   if (!startDate)
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: "Rotation not found" });
   const assignment = await prisma.shiftAssignment.create({
     data: {
-      userId,
+      userId: resolvedUserId ?? undefined,
       shiftRotationId,
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : null,

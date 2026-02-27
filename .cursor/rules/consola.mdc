@@ -1,6 +1,5 @@
 ---
 description: This project uses consola for logging with a globally configured log level. 
-globs:
 alwaysApply: true
 ---
 

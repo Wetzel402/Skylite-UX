@@ -11,8 +11,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: "id and assignmentId required" });
   await ensureShiftsIntegration(integrationId);
   const body = await readBody(event);
-  const { startDate, endDate } = body;
+  const { userId, startDate, endDate } = body;
   const updateData: Record<string, unknown> = {};
+  if (userId !== undefined)
+    updateData.userId = userId != null && typeof userId === "string" ? userId : null;
   if (startDate !== undefined)
     updateData.startDate = new Date(startDate);
   if (endDate !== undefined)

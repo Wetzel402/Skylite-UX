@@ -136,24 +136,26 @@ model ShiftSlot {
   startTime       String
   endTime         String
   label           String?
+  color           String?
   order           Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   shiftRotation ShiftRotation @relation(fields: [shiftRotationId], references: [id], onDelete: Cascade)
 
+  @@unique([shiftRotationId, weekIndex, dayOfWeek])
   @@map("shift_slots")
 }
 
 model ShiftAssignment {
   id              String    @id @default(cuid())
-  userId          String
+  userId          String?
   shiftRotationId String
   startDate       DateTime
   endDate         DateTime?
 
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shiftRotation ShiftRotation @relation(fields: [shiftRotationId], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shiftRotation ShiftRotation  @relation(fields: [shiftRotationId], references: [id], onDelete: Cascade)
 
   @@map("shift_assignments")
 }

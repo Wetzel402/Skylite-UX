@@ -119,14 +119,16 @@ onMounted(async () => {
 });
 
 watch(
-  () => route.query,
-  (query) => {
-    const integrationId = query.openSetup;
+  () => [route.query.openSetup, (integrations.value as Integration[]).length],
+  ([openSetup]) => {
+    const integrationId = Array.isArray(openSetup) ? openSetup[0] : openSetup;
     if (!integrationId)
       return;
     nextTick(() => {
       const allIntegrations = integrations.value as Integration[];
-      const integration = allIntegrations.find(i => i.id === integrationId);
+      const integration = allIntegrations.find(
+        (i: Integration) => i.id === integrationId,
+      );
       if (!integration)
         return;
       const config = integrationRegistry.get(
@@ -994,7 +996,7 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                   Show week numbers
                 </p>
                 <p class="text-sm text-muted">
-                  Show ISO week number in the calendar (e.g. for shift rotations)
+                  Show ISO week number for shift events
                 </p>
               </div>
               <USwitch

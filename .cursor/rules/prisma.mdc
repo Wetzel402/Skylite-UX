@@ -1,10 +1,11 @@
 ---
-description: This project uses prisma and postgresql
-globs:
+description: This project uses Prisma and PostgreSQL
 alwaysApply: true
 ---
 
 # Prisma and PostgreSQL
+
+You are an expert in PostgreSQL and Prisma ORM.
 
 - Database is PostgreSQL. Use Prisma Client for all DB access.
 - Schema lives in `prisma/schema.prisma`. Run migrations via `prisma migrate`.

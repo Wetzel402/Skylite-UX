@@ -208,6 +208,20 @@ export default defineNuxtPlugin(async () => {
                 },
               ),
             );
+            if (integration.service === "shifts") {
+              integrationDataPromises.push(
+                useAsyncData(
+                  `shifts-rotations-${integration.id}`,
+                  () => $fetch(`/api/integrations/${integration.id}/shifts/rotations`).catch(() => []),
+                  { server: true, lazy: false },
+                ),
+                useAsyncData(
+                  `shifts-assignments-${integration.id}`,
+                  () => $fetch(`/api/integrations/${integration.id}/shifts/assignments`).catch(() => []),
+                  { server: true, lazy: false },
+                ),
+              );
+            }
           }
           else if (integration.type === "shopping") {
             integrationDataPromises.push(

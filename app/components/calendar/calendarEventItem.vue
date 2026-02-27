@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { getISOWeek } from "date-fns";
+
 import type { CalendarEvent } from "~/types/calendar";
+import type { Integration } from "~/types/database";
 
 import { useCalendar } from "~/composables/useCalendar";
 import { useStableDate } from "~/composables/useStableDate";
@@ -21,6 +24,10 @@ const emit = defineEmits<{
 }>();
 
 const { getStableDate, parseStableDate } = useStableDate();
+const { preferences } = useClientPreferences();
+const { integrations } = useIntegrations();
+
+const showWeekNumbers = computed(() => preferences.value?.showWeekNumbers ?? false);
 
 const displayStart = computed(() => {
   if (props.event.start instanceof Date) {
@@ -42,6 +49,29 @@ const displayEnd = computed(() => {
     return parseStableDate(dateString);
   }
   return getStableDate();
+});
+
+const isShiftEvent = computed<boolean>(() => {
+  const list = integrations.value;
+  if (!list?.length)
+    return false;
+  const primaryId = props.event.integrationId;
+  if (primaryId && (list as Integration[]).find(i => i.id === primaryId)?.service === "shifts")
+    return true;
+  const sources = props.event.sourceCalendars;
+  if (!sources?.length)
+    return false;
+  for (const sc of sources) {
+    if ((list as Integration[]).find(i => i.id === sc.integrationId)?.service === "shifts")
+      return true;
+  }
+  return false;
+});
+
+const eventIsoWeek = computed(() => {
+  if (!showWeekNumbers.value || !isShiftEvent.value)
+    return null;
+  return getISOWeek(displayStart.value);
 });
 
 const { getEventColorClasses } = useCalendar();
@@ -136,15 +166,25 @@ function handleKeydown(e: KeyboardEvent) {
     @keydown="handleKeydown"
   >
     <div v-show="view === 'month'">
-      <div class="flex items-center justify-between">
-        <span class="truncate flex-1">
-          {{ event.title }}
-        </span>
+      <div class="flex items-center justify-between min-w-0">
+        <div class="flex items-center gap-1 min-w-0 flex-1">
+          <span class="truncate flex-1">
+            {{ event.title }}
+          </span>
+          <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+            Week {{ eventIsoWeek }}
+          </span>
+        </div>
       </div>
     </div>
     <div v-show="view === 'week'">
-      <div class="font-medium text-sm truncate">
-        {{ event.title }}
+      <div class="font-medium text-sm flex items-center gap-1 min-w-0">
+        <span class="truncate flex-1">
+          {{ event.title }}
+        </span>
+        <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          Week {{ eventIsoWeek }}
+        </span>
       </div>
       <div class="flex items-center justify-between gap-2 mt-1 min-h-[1.25rem]">
         <div class="text-xs opacity-70">
@@ -194,8 +234,13 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
     </div>
     <div v-show="view === 'day'">
-      <div class="text-sm font-medium">
-        {{ event.title }}
+      <div class="text-sm font-medium flex items-center gap-1 min-w-0">
+        <span class="truncate flex-1">
+          {{ event.title }}
+        </span>
+        <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          Week {{ eventIsoWeek }}
+        </span>
       </div>
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">
@@ -255,8 +300,13 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
     </div>
     <div v-show="view === 'agenda'">
-      <div class="text-sm font-medium">
-        {{ event.title }}
+      <div class="text-sm font-medium flex items-center gap-1 min-w-0">
+        <span class="truncate flex-1">
+          {{ event.title }}
+        </span>
+        <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          Week {{ eventIsoWeek }}
+        </span>
       </div>
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">

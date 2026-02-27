@@ -711,6 +711,13 @@ export function useCalendar() {
   }
 
   function getCombinedEventColors(event: CalendarEvent): string | string[] {
+    if (event.color !== undefined && event.color !== null) {
+      if (Array.isArray(event.color))
+        return event.color;
+      if (typeof event.color === "string")
+        return event.color;
+    }
+
     const colors: string[] = [];
 
     if (event.sourceCalendars && event.sourceCalendars.length > 0) {
