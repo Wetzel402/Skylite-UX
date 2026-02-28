@@ -274,6 +274,7 @@ function openEditTodo(item: BaseListItem) {
     order: todo.order,
     shoppingListId: todo.todoColumnId || "",
     notes: todo.description,
+    isCountdown: todo.isCountdown,
   };
   todoItemDialog.value = true;
 }

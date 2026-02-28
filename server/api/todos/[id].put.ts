@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
         description: body.description,
         completed: body.completed,
         priority: body.priority,
-        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        ...(body.dueDate !== undefined && { dueDate: body.dueDate ? new Date(body.dueDate) : null }),
         todoColumnId: body.todoColumnId,
         order: body.order,
         ...(body.isCountdown !== undefined && { isCountdown: body.isCountdown }),
