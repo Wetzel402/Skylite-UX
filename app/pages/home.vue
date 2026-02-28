@@ -123,22 +123,21 @@ onMounted(async () => {
   updateClock();
   intervals.value.push(setInterval(updateClock, 1000));
 
-  // Initial data fetches (one-time, no polling intervals)
+  // Initial data fetches (one-time, no polling intervals) — run in parallel
+  const initialFetches: Promise<void>[] = [];
   if (homeSettings.value?.weatherEnabled && homeSettings.value.latitude && homeSettings.value.longitude) {
-    await fetchWeather();
+    initialFetches.push(fetchWeather());
   }
-
   if (homeSettings.value?.eventsEnabled) {
-    await fetchUpcomingEvents();
+    initialFetches.push(fetchUpcomingEvents());
   }
-
   if (homeSettings.value?.todosEnabled) {
-    await fetchTodaysTasks();
+    initialFetches.push(fetchTodaysTasks());
   }
-
   if (homeSettings.value?.mealsEnabled) {
-    await fetchTodaysMenu();
+    initialFetches.push(fetchTodaysMenu());
   }
+  await Promise.allSettled(initialFetches);
 });
 
 // Clear all intervals on unmount
@@ -160,41 +159,10 @@ useHomeSSE({
       consola.debug("[Home] Weather updated via SSE");
     }
   },
-  onMealsUpdate: (data) => {
+  onMealsUpdate: async () => {
     if (homeSettings.value?.mealsEnabled) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-      const today = `${year}-${month}-${day}`;
-
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
-
-      const mealTypeOrder: Record<string, number> = { BREAKFAST: 0, LUNCH: 1, DINNER: 2 };
-
-      const todayMeals = (data || []).filter((meal: any) => {
-        const mealDate = new Date(meal.calculatedDate);
-        const mealDateStr = `${mealDate.getFullYear()}-${String(mealDate.getMonth() + 1).padStart(2, "0")}-${String(mealDate.getDate()).padStart(2, "0")}`;
-        return mealDateStr === today;
-      }).sort((a: any, b: any) =>
-        (mealTypeOrder[a.mealType] ?? 999) - (mealTypeOrder[b.mealType] ?? 999),
-      );
-
-      const tomorrowMeals = (data || []).filter((meal: any) => {
-        const mealDate = new Date(meal.calculatedDate);
-        const mealDateStr = `${mealDate.getFullYear()}-${String(mealDate.getMonth() + 1).padStart(2, "0")}-${String(mealDate.getDate()).padStart(2, "0")}`;
-        return mealDateStr === tomorrowStr;
-      }).sort((a: any, b: any) =>
-        (mealTypeOrder[a.mealType] ?? 999) - (mealTypeOrder[b.mealType] ?? 999),
-      );
-
-      todaysMenu.value = [
-        ...todayMeals.map((meal: any) => ({ ...meal, dayLabel: "Today" })),
-        ...tomorrowMeals.map((meal: any) => ({ ...meal, dayLabel: "Tomorrow" })),
-      ];
-      consola.debug("[Home] Meals updated via SSE");
+      await fetchTodaysMenu();
+      consola.debug("[Home] Meals refreshed after SSE signal");
     }
   },
   onTodosUpdate: async () => {

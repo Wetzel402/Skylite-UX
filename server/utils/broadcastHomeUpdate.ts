@@ -1,5 +1,5 @@
-import { addDays } from "date-fns";
 import { consola } from "consola";
+import { addDays } from "date-fns";
 
 import type { HomeUpdateEventType } from "../../app/types/sync";
 
@@ -47,12 +47,12 @@ async function fetchDataForEventType(eventType: HomeUpdateEventType): Promise<Re
   switch (eventType) {
     case "meals_update": {
       // calculatedDate is computed from mealPlan.weekStart + meal.dayOfWeek,
-      // not a DB column. Replicate the byDateRange query pattern.
+      // not a DB column. Replicate the byDateRange query pattern with UTC dates.
       const now = new Date();
-      const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+      const startDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0));
       const tomorrow = new Date(startDate);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const endDate = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59, 999);
+      const endDate = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), 23, 59, 59, 999));
 
       // Look back up to 6 days for meal plans whose meals may fall in today/tomorrow
       const lookbackDate = addDays(startDate, -6);
@@ -75,7 +75,18 @@ async function fetchDataForEventType(eventType: HomeUpdateEventType): Promise<Re
         for (const meal of mealPlan.meals) {
           const mealDate = addDays(mealPlan.weekStart, meal.dayOfWeek);
 
-          if (mealDate >= startDate && mealDate <= endDate) {
+          // Normalize to UTC midnight for comparison (matches byDateRange.get.ts)
+          const mealDateUTC = new Date(Date.UTC(
+            mealDate.getUTCFullYear(),
+            mealDate.getUTCMonth(),
+            mealDate.getUTCDate(),
+            0,
+            0,
+            0,
+            0,
+          ));
+
+          if (mealDateUTC >= startDate && mealDateUTC <= endDate) {
             mealsWithDates.push({
               ...meal,
               calculatedDate: mealDate,
