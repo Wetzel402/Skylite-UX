@@ -15,7 +15,7 @@ Extend the existing SSE sync manager (Approach A) rather than creating a separat
 
 ### Data Flow
 
-```
+```text
 HOME PAGE (home.vue)
   onMounted:
     1. Fetch all widget data (one-time)
@@ -93,20 +93,20 @@ The sync manager gets a new interval that polls Open-Meteo on the configured sch
 - Add SSE event listeners via `useHomeSSE()` that update existing refs
 - `intervals` ref shrinks from ~6 entries to 2 (clock + photos)
 
-### useHomeSSE Composable
+### useHomeSse Composable
 
-Hooks into the existing sync manager client plugin:
-1. Registers listeners for the 5 new event types
-2. Returns callback registration functions for home.vue to wire events to refs
-3. Cleans up listeners on `onUnmounted`
+Watches shared `home-sse-updates` state (populated by the sync manager client plugin):
+1. Dispatches callbacks for 5 event types with deduplication via timestamps
+2. Accepts callback functions for home.vue to wire events to refs
+3. Cleans up watchers on `onUnmounted`
 
 ### HomeCountdownWidget.vue
 
-Remove its own polling interval. Accept countdown data as a prop from home.vue.
+Remove its own polling interval. Use `useHomeSSE()` to listen for `countdowns_update` events and trigger a refetch.
 
 ### Data Shape Contract
 
-SSE payloads use the exact same response shapes as existing API endpoints. No client-side transformation needed.
+SSE payloads for meals include computed `calculatedDate` fields (derived from `mealPlan.weekStart + meal.dayOfWeek`). Todos and events SSE updates act as signals — the handlers refetch via existing API calls to preserve data from external integrations (Google Tasks, Google Calendar).
 
 ## Error Handling
 

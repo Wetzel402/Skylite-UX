@@ -15,6 +15,7 @@ import type { ConnectedClient, ServerSyncEvent, SyncInterval } from "../../app/t
 
 import { integrationConfigs } from "../../app/integrations/integrationConfig";
 import { createIntegrationService, registerIntegration } from "../../app/types/integrations";
+import { setBroadcastFunction } from "../utils/broadcastHomeUpdate";
 
 const syncIntervals = new Map<string, SyncInterval>();
 const connectedClients = new Set<ConnectedClient>();
@@ -28,6 +29,9 @@ export default defineNitroPlugin(async (nitroApp) => {
   }
 
   consola.start("Sync Manager: Initializing...");
+
+  // Initialize home broadcast utility with our broadcast function
+  setBroadcastFunction(broadcastToClients, () => connectedClients.size);
 
   integrationConfigs.forEach((config) => {
     registerIntegration(config);
@@ -55,8 +59,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 
   await initializeIntegrationSync();
 
+  // Set up weather broadcast job
+  await initializeWeatherBroadcast();
+
   nitroApp.hooks.hook("close", () => {
     consola.info("Sync Manager: Shutting down...");
+    if (weatherInterval) clearInterval(weatherInterval);
     clearAllSyncIntervals();
   });
 });
@@ -313,6 +321,129 @@ export function unregisterClient(event: H3Event) {
   if (clientToRemove) {
     connectedClients.delete(clientToRemove);
     consola.info(`Sync Manager: Client disconnected. Total clients: ${connectedClients.size}`);
+  }
+}
+
+let weatherInterval: NodeJS.Timeout | null = null;
+
+async function initializeWeatherBroadcast() {
+  try {
+    const prisma = await import("../../app/lib/prisma").then(m => m.default);
+    const homeSettings = await prisma.homeSettings.findFirst();
+
+    if (!homeSettings?.weatherEnabled || !homeSettings.latitude || !homeSettings.longitude) {
+      consola.debug("Sync Manager: Weather broadcast skipped (not configured)");
+      return;
+    }
+
+    const refreshIntervalMs = (homeSettings.refreshInterval || 6.0) * 3600000;
+
+    weatherInterval = setInterval(async () => {
+      try {
+        const latestSettings = await prisma.homeSettings.findFirst();
+        if (!latestSettings?.weatherEnabled || !latestSettings.latitude || !latestSettings.longitude) {
+          return;
+        }
+        await broadcastWeatherUpdate(latestSettings);
+      }
+      catch (error) {
+        consola.error("Sync Manager: Weather interval callback failed:", error);
+      }
+    }, refreshIntervalMs);
+
+    await broadcastWeatherUpdate(homeSettings);
+
+    consola.debug(`Sync Manager: Weather broadcast initialized (interval: ${homeSettings.refreshInterval || 6} hours)`);
+  }
+  catch (error) {
+    consola.error("Sync Manager: Failed to initialize weather broadcast:", error);
+  }
+}
+
+async function broadcastWeatherUpdate(homeSettings: any) {
+  if (connectedClients.size === 0) return;
+
+  try {
+    const https = await import("node:https");
+
+    const params = new URLSearchParams({
+      latitude: homeSettings.latitude.toString(),
+      longitude: homeSettings.longitude.toString(),
+      current: "temperature_2m,apparent_temperature,weather_code,is_day",
+      daily: "temperature_2m_max,temperature_2m_min,weather_code",
+      temperature_unit: homeSettings.temperatureUnit === "fahrenheit" ? "fahrenheit" : "celsius",
+      timezone: "auto",
+      forecast_days: "7",
+    });
+
+    const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
+
+    const weather: any = await new Promise((resolve, reject) => {
+      const req = https.get(url, (res: any) => {
+        if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
+          res.resume();
+          clearTimeout(timeout);
+          reject(new Error(`HTTP ${res.statusCode}`));
+          return;
+        }
+
+        let data = "";
+        res.on("data", (chunk: string) => { data += chunk; });
+        res.on("end", () => {
+          clearTimeout(timeout);
+          try { resolve(JSON.parse(data)); }
+          catch (err) { reject(err); }
+        });
+      });
+      const timeout = setTimeout(() => {
+        req.destroy(new Error("Weather request timeout"));
+      }, 30000);
+      req.on("error", (err: Error) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+    });
+
+    const getWeatherDescription = (code: number): string => {
+      if (code === 0) return "Clear sky";
+      if (code === 1) return "Mainly clear";
+      if (code === 2) return "Partly cloudy";
+      if (code === 3) return "Overcast";
+      if (code >= 45 && code <= 48) return "Foggy";
+      if (code >= 51 && code <= 57) return "Drizzle";
+      if (code >= 61 && code <= 67) return "Rain";
+      if (code >= 71 && code <= 77) return "Snow";
+      if (code >= 80 && code <= 82) return "Rain showers";
+      if (code >= 85 && code <= 86) return "Snow showers";
+      if (code >= 95 && code <= 99) return "Thunderstorm";
+      return "Unknown";
+    };
+
+    const dailyForecast = weather.daily.time.map((date: string, index: number) => ({
+      date,
+      tempMax: Math.round(weather.daily.temperature_2m_max[index]),
+      tempMin: Math.round(weather.daily.temperature_2m_min[index]),
+      weatherCode: weather.daily.weather_code[index],
+      weatherDescription: getWeatherDescription(weather.daily.weather_code[index]),
+    }));
+
+    const weatherData = {
+      temperature: Math.round(weather.current.temperature_2m),
+      weatherCode: weather.current.weather_code,
+      weatherDescription: getWeatherDescription(weather.current.weather_code),
+      daily: dailyForecast,
+    };
+
+    broadcastToClients({
+      type: "weather_update",
+      data: weatherData,
+      timestamp: new Date(),
+      success: true,
+    } as any);
+    consola.debug("Sync Manager: Broadcast weather update");
+  }
+  catch (error) {
+    consola.error("Sync Manager: Failed to fetch/broadcast weather:", error);
   }
 }
 

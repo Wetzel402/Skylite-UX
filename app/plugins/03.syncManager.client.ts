@@ -218,6 +218,23 @@ export default defineNuxtPlugin((): any => {
                 });
               }
               break;
+
+            case "weather_update":
+            case "meals_update":
+            case "todos_update":
+            case "events_update":
+            case "countdowns_update": {
+              const homeUpdates = useState<Record<string, { data: any; timestamp: Date }>>("home-sse-updates", () => ({}));
+              homeUpdates.value = {
+                ...homeUpdates.value,
+                [event.type]: {
+                  data: event.data,
+                  timestamp: new Date(event.timestamp),
+                },
+              };
+              consola.debug(`Sync Manager: Received home update: ${event.type}`);
+              break;
+            }
           }
         }
         catch (error) {

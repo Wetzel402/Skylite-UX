@@ -1,9 +1,10 @@
 import consola from "consola";
 
+import { parseLocalDate } from "~/utils/dateParser";
+
 import prisma from "../../../app/lib/prisma";
 import { getHolidayCache, saveHolidayCache } from "../../utils/holidayCache";
 import { getNextUpcomingHoliday } from "../../utils/nagerDateApi";
-import { parseLocalDate } from "~/utils/dateParser";
 
 export default defineEventHandler(async (_event) => {
   try {

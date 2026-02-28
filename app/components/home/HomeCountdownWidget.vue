@@ -4,7 +4,6 @@ import consola from "consola";
 import type { Todo } from "~/types/database";
 
 const { fetchCountdowns, getEarliestCountdown, calculateDaysRemaining, getCountdownMessage } = useCountdowns();
-const { homeSettings, fetchHomeSettings } = useHomeSettings();
 
 const countdown = ref<Todo | null>(null);
 const loading = ref(true);
@@ -39,7 +38,6 @@ async function loadCountdown() {
       countdown.value = earliest;
       daysRemaining.value = calculateDaysRemaining(earliest.dueDate);
 
-      // Load or generate the message
       loadingMessage.value = true;
       displayMessage.value = await getCountdownMessage(earliest);
       loadingMessage.value = false;
@@ -60,28 +58,16 @@ async function loadCountdown() {
   }
 }
 
-let intervalId: NodeJS.Timeout | null = null;
-
-onMounted(async () => {
-  // Fetch home settings first to get the refresh interval
-  await fetchHomeSettings();
-
+onMounted(() => {
   loadCountdown();
-
-  // Use the home settings refresh interval (convert hours to milliseconds)
-  const refreshIntervalMs = (homeSettings.value?.refreshInterval || 6.0) * 3600000;
-
-  // Set up auto-refresh with the configured interval
-  intervalId = setInterval(() => {
-    consola.debug("Auto-refreshing countdown widget");
-    loadCountdown();
-  }, refreshIntervalMs);
 });
 
-onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId);
-  }
+// Listen for SSE countdown updates instead of polling
+useHomeSSE({
+  onCountdownsUpdate: () => {
+    consola.debug("Countdown widget: Received SSE update, reloading");
+    loadCountdown();
+  },
 });
 </script>
 

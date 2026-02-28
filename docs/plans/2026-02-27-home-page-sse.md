@@ -1,7 +1,5 @@
 # Home Page SSE Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
-
 **Goal:** Replace the home page's 5 independent polling intervals with SSE listeners that react to server-side data changes in real-time.
 
 **Architecture:** Extend the existing sync manager (`server/plugins/02.syncManager.ts`) with new event types (`weather_update`, `meals_update`, `todos_update`, `events_update`, `countdowns_update`). API mutation routes call a new `broadcastHomeUpdate()` utility after successful CRUD operations. The home page subscribes to these events via a new `useHomeSSE()` composable while keeping initial data fetches on mount.
@@ -9,6 +7,8 @@
 **Tech Stack:** Nuxt 4, Vue 3, TypeScript, Server-Sent Events (existing infrastructure), Prisma, Vitest
 
 ---
+
+## Tasks
 
 ### Task 1: Extend SyncEvent types for home page events
 
@@ -42,7 +42,7 @@ describe("SyncEvent types", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Run test to verify it passes**
 
 Run: `cd /c/Skylight && npx vitest run tests/unit/types/sync-types.test.ts`
 Expected: PASS (this is a type-level change, the test documents intent)
@@ -299,8 +299,14 @@ async function fetchDataForEventType(eventType: HomeUpdateEventType): Promise<an
         },
         include: {
           users: {
-            include: {
-              user: true,
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatar: true,
+                },
+              },
             },
           },
         },

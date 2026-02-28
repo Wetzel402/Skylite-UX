@@ -5,13 +5,13 @@ import ical from "ical.js";
 import type { CalendarEvent } from "~/types/calendar";
 
 import prisma from "~/lib/prisma";
+import { parseLocalDate } from "~/utils/dateParser";
 
 import type { ICalEvent } from "../../../../integrations/iCal/types";
 
 import { GoogleCalendarServerService } from "../../../../integrations/google_calendar/client";
 import { getGoogleOAuthConfig } from "../../../../utils/googleOAuthConfig";
 import { parseRRuleString } from "../../../../utils/rrule";
-import { parseLocalDate } from "~/utils/dateParser";
 
 function rruleObjectToString(rrule: {
   freq: string;

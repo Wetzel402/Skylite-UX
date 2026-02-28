@@ -1,5 +1,7 @@
 import prisma from "~/lib/prisma";
 
+import { broadcastHomeUpdate } from "../../utils/broadcastHomeUpdate";
+
 export default defineEventHandler(async (event) => {
   try {
     const id = getRouterParam(event, "id");
@@ -33,6 +35,7 @@ export default defineEventHandler(async (event) => {
       where: { id: actualId },
     });
 
+    broadcastHomeUpdate("events_update").catch(() => {});
     return {
       success: true,
       message: isExpandedEvent

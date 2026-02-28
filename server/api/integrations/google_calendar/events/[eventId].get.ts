@@ -3,13 +3,13 @@ import { createError, defineEventHandler, getQuery, getRouterParam } from "h3";
 import ical from "ical.js";
 
 import prisma from "~/lib/prisma";
+import { parseLocalDate } from "~/utils/dateParser";
 
 import type { ICalEvent } from "../../../../integrations/iCal/types";
 
 import { GoogleCalendarServerService } from "../../../../integrations/google_calendar/client";
 import { getGoogleOAuthConfig } from "../../../../utils/googleOAuthConfig";
 import { parseRRuleString } from "../../../../utils/rrule";
-import { parseLocalDate } from "~/utils/dateParser";
 
 export default defineEventHandler(async (event) => {
   const eventId = getRouterParam(event, "eventId");

@@ -3,6 +3,8 @@ import { consola } from "consola";
 
 import prisma from "~/lib/prisma";
 
+import { broadcastHomeUpdate } from "../../../utils/broadcastHomeUpdate";
+
 export default defineEventHandler(async (event) => {
   try {
     const mealPlanId = getRouterParam(event, "id");
@@ -69,6 +71,8 @@ export default defineEventHandler(async (event) => {
         order: ((maxOrder._max?.order) || 0) + 1,
       },
     });
+
+    broadcastHomeUpdate("meals_update").catch(() => {});
 
     return meal;
   }

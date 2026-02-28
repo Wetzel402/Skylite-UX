@@ -3,8 +3,10 @@ import type { ShoppingListWithItemsAndCount, TodoWithUser } from "~/types/databa
 
 export type SyncData = CalendarEvent[] | ShoppingListWithItemsAndCount[] | TodoWithUser[];
 
+export type HomeUpdateEventType = "weather_update" | "meals_update" | "todos_update" | "events_update" | "countdowns_update";
+
 export type SyncEvent = {
-  type: "integration_sync" | "connection_established" | "sync_status" | "heartbeat";
+  type: "integration_sync" | "connection_established" | "sync_status" | "heartbeat" | HomeUpdateEventType;
   integrationId?: string;
   integrationType?: string;
   service?: string;
@@ -67,11 +69,11 @@ export type ConnectedClient = {
 };
 
 export type ServerSyncEvent = {
-  type: "integration_sync";
-  integrationId: string;
-  integrationType: string;
-  service: string;
-  data: SyncData;
+  type: "integration_sync" | HomeUpdateEventType;
+  integrationId?: string;
+  integrationType?: string;
+  service?: string;
+  data: SyncData | Record<string, unknown>;
   timestamp: Date;
   success: boolean;
   error?: string;
