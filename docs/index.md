@@ -87,13 +87,14 @@ Skylite UX was conceived as an open source, self-hosted alternative to commercia
 - Add breakfast, lunch, dinner, and sides to your meal plan
 - Edit or delete meals from your meal plan
 
-### Users
+### Settings 
 
 ![Settings Page]({{ '/assets/images/screenshots/settings.png' | relative_url }})
 
 - Add, edit, or remove family members
 - Assign family members a specific profile color
 - Personalized family management
+- Configure theme (light/dark/system), font, default landing page, and more. 
 
 **View all screenshots in our [Gallery]({{ '/gallery/' | relative_url }}) page.**
 
@@ -103,4 +104,4 @@ Distributed under the MIT License. See [LICENSE](https://github.com/wetzel402/Sk
 
 ## Special Thanks
 
-The calendar UI was rewritten from [OriginUI](https://github.com/origin-space/ui-experiments) React code with express permission. Thank you Pasquale and Davide!
+The calendar UI was rewritten from [OriginUI](https://github.com/origin-space/ui-experiments) React code with explicit permission. Thank you Pasquale and Davide!

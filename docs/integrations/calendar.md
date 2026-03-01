@@ -88,3 +88,19 @@ The Google Calendar integration provides full two-way synchronization with your 
 - **OAuth errors**: Ensure your redirect URI is correctly configured in Google Cloud Console
 - **Calendar not appearing**: Verify the Google Calendar API is enabled in your Google Cloud project
 - **Permission denied**: Check that you've granted the necessary permissions during OAuth authorization
+
+---
+
+## Shifts
+
+The Shifts integration allows you to define shift rotations (e.g. 2-2-2, 4-on-3-off) with a cycle length and slots per week/day. Shift events then appear on the main calendar like other calendar integrations allowing you to see your shifts at a glance.
+
+### Capabilities
+
+- **Get events**: View shift events
+
+### Setup Instructions
+
+1. Follow the [general setup instructions](#general-setup) above. Note: Shifts does not accept event/user color. Colors are defined per configured shift slot.
+2. After saving the shift dialog should open to set up your rotations:
+   - Create one or more **rotations** using predefined patterns or a custom one.

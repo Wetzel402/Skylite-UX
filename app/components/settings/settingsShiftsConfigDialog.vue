@@ -601,7 +601,7 @@ function segmentsToSlots(segments: PatternSegment[], _startDate: DateValue): Shi
 
 function dedupeSlotsByWeekAndDay(slots: ShiftTemplateSlot[]): ShiftTemplateSlot[] {
   const seen = new Set<string>();
-  return slots.filter(s => {
+  return slots.filter((s) => {
     const key = `${s.weekIndex}-${s.dayOfWeek}`;
     if (seen.has(key))
       return false;

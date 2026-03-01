@@ -188,7 +188,7 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
       <div class="flex items-center justify-between gap-2 mt-1 min-h-[1.25rem]">
         <div class="text-xs opacity-70">
-          <template v-if="isAllDay">
+          <template v-if="isAllDay && !isShiftEvent">
             All day
           </template>
           <template v-else>
@@ -245,7 +245,7 @@ function handleKeydown(e: KeyboardEvent) {
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">
           <div class="text-xs opacity-70">
-            <template v-if="isAllDay">
+            <template v-if="isAllDay && !isShiftEvent">
               <span>All day</span>
             </template>
             <template v-else>
@@ -311,7 +311,7 @@ function handleKeydown(e: KeyboardEvent) {
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">
           <div class="text-xs opacity-70">
-            <template v-if="isAllDay">
+            <template v-if="isAllDay && !isShiftEvent">
               <span>All day</span>
             </template>
             <template v-else>

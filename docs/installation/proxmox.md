@@ -10,7 +10,7 @@ permalink: /installation/proxmox/
 
 ## Requirements
 
-- A [Proxmox VE] installation(https://www.proxmox.com/en/products/proxmox-virtual-environment/get-started)
+- A [Proxmox VE](https://www.proxmox.com/en/products/proxmox-virtual-environment/get-started) installation
 
 ## Community install script
 
