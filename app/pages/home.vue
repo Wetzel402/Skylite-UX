@@ -133,15 +133,6 @@ function refreshEnabledWidgets(): Promise<void>[] {
 }
 
 // Fetch photos and settings on mount
-// When the page becomes visible again (screen wake, tab focus),
-// re-check for midnight crossing since setInterval may have been frozen.
-function handleVisibilityChange() {
-  if (document.visibilityState === "visible") {
-    consola.debug("[Home] Page became visible, checking for day change");
-    updateClock();
-  }
-}
-
 onMounted(async () => {
   await Promise.all([
     fetchPhotos(),
@@ -152,9 +143,6 @@ onMounted(async () => {
   updateClock();
   intervals.value.push(setInterval(updateClock, 1000));
 
-  // Catch day changes after browser/tab/screen suspension
-  document.addEventListener("visibilitychange", handleVisibilityChange);
-
   // Initial data fetches (one-time, no polling intervals) — run in parallel
   await Promise.allSettled(refreshEnabledWidgets());
   midnightDetector.markInitialized();
@@ -163,7 +151,6 @@ onMounted(async () => {
 // Clear all intervals on unmount
 onUnmounted(() => {
   intervals.value.forEach(interval => clearInterval(interval));
-  document.removeEventListener("visibilitychange", handleVisibilityChange);
 });
 
 // SSE listeners — update refs when server pushes new data
