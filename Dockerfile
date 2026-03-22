@@ -12,7 +12,8 @@ COPY prisma ./prisma/
 
 # Install system dependencies and npm packages
 RUN apt-get update -y && apt-get install -y openssl && \
-    npm install
+    rm -rf /var/lib/apt/lists/* && \
+    npm ci
 
 # Copy source code
 COPY . .
@@ -33,13 +34,18 @@ ENV HOST=0.0.0.0
 # Set working directory
 WORKDIR /app
 
-# Copy package files and Prisma schema (needed for npm ci)
-COPY package*.json ./
+# Copy prisma schema files (needed for migrate deploy + generate in entrypoint)
 COPY prisma ./prisma/
 
-# Install system dependencies and production npm packages
+# Copy package-lock.json to extract Prisma version
+COPY package-lock.json ./package-lock.json
+
+# Install system dependencies and Prisma CLI only (Nuxt bundles everything into .output)
 RUN apt-get update -y && apt-get install -y openssl && \
-    npm install --omit=dev
+    rm -rf /var/lib/apt/lists/* && \
+    PRISMA_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version") && \
+    npm install -g prisma@${PRISMA_VERSION} && \
+    rm package-lock.json
 
 # Copy built application from builder stage
 COPY --from=builder /app/.output ./.output
