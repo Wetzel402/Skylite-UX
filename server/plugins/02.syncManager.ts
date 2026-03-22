@@ -343,13 +343,20 @@ function scheduleMidnightBroadcast() {
 
   midnightTimeout = setTimeout(async () => {
     consola.info("Sync Manager: Midnight broadcast — refreshing all widget data for new day");
-    await Promise.all([
-      broadcastHomeUpdate("meals_update"),
-      broadcastHomeUpdate("todos_update"),
-      broadcastHomeUpdate("events_update"),
-      broadcastHomeUpdate("countdowns_update"),
-    ]);
-    scheduleMidnightBroadcast(); // re-schedule for next midnight
+    try {
+      await Promise.all([
+        broadcastHomeUpdate("meals_update"),
+        broadcastHomeUpdate("todos_update"),
+        broadcastHomeUpdate("events_update"),
+        broadcastHomeUpdate("countdowns_update"),
+      ]);
+    }
+    catch (error) {
+      consola.error("Sync Manager: Midnight broadcast failed:", error);
+    }
+    finally {
+      scheduleMidnightBroadcast(); // re-schedule for next midnight
+    }
   }, msUntilMidnight);
 }
 
