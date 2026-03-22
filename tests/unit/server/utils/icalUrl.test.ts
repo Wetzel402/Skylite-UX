@@ -19,6 +19,10 @@ describe("normalizeWebcalUrl", () => {
     expect(normalizeWebcalUrl("WEBCALS://example.com/cal.ics")).toBe("https://example.com/cal.ics");
   });
 
+  it("handles mixed-case WebCal://", () => {
+    expect(normalizeWebcalUrl("WebCal://example.com/cal.ics")).toBe("http://example.com/cal.ics");
+  });
+
   it("leaves https:// unchanged", () => {
     expect(normalizeWebcalUrl("https://example.com/calendar.ics")).toBe("https://example.com/calendar.ics");
   });

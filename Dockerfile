@@ -11,7 +11,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install system dependencies and npm packages
-RUN apt-get update -y && apt-get install -y openssl && \
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && \
     rm -rf /var/lib/apt/lists/* && \
     npm ci
 
@@ -41,15 +41,16 @@ COPY prisma ./prisma/
 COPY package-lock.json ./package-lock.json
 
 # Install system dependencies and Prisma CLI only (Nuxt bundles everything into .output)
-RUN apt-get update -y && apt-get install -y openssl && \
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && \
     rm -rf /var/lib/apt/lists/* && \
     PRISMA_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version") && \
     npm install -g prisma@${PRISMA_VERSION} && \
     rm package-lock.json
 
-# Copy built application from builder stage
+# Copy built application and Prisma client from builder stage
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
 # Copy entrypoint script
 COPY scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
