@@ -1,6 +1,7 @@
 import type { H3Event } from "h3";
 
 import { consola } from "consola";
+import { differenceInMilliseconds, startOfTomorrow } from "date-fns";
 import { defineNitroPlugin } from "nitropack/runtime/plugin";
 
 import type { CalendarEvent } from "../../app/types/calendar";
@@ -332,23 +333,22 @@ let midnightTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function scheduleMidnightBroadcast() {
   const now = new Date();
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  const msUntilMidnight = tomorrow.getTime() - now.getTime() + 1000; // 1s past midnight
+  const msUntilMidnight = differenceInMilliseconds(startOfTomorrow(), now) + 1000; // 1s past midnight
 
   consola.debug(`Sync Manager: Midnight broadcast scheduled in ${Math.round(msUntilMidnight / 1000)}s`);
 
   midnightTimeout = setTimeout(async () => {
     consola.info("Sync Manager: Midnight broadcast — refreshing all widget data for new day");
-    try {
-      await Promise.allSettled([
-        broadcastHomeUpdate("meals_update"),
-        broadcastHomeUpdate("todos_update"),
-        broadcastHomeUpdate("events_update"),
-        broadcastHomeUpdate("countdowns_update"),
-      ]);
-    }
-    catch (error) {
-      consola.error("Sync Manager: Midnight broadcast failed:", error);
+    const results = await Promise.allSettled([
+      broadcastHomeUpdate("meals_update"),
+      broadcastHomeUpdate("todos_update"),
+      broadcastHomeUpdate("events_update"),
+      broadcastHomeUpdate("countdowns_update"),
+    ]);
+    for (const result of results) {
+      if (result.status === "rejected") {
+        consola.error("Sync Manager: Midnight broadcast partially failed:", result.reason);
+      }
     }
     scheduleMidnightBroadcast(); // re-schedule for next midnight
   }, msUntilMidnight);
