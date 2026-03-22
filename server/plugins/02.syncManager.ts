@@ -1,6 +1,7 @@
 import type { H3Event } from "h3";
 
 import { consola } from "consola";
+import { differenceInMilliseconds, startOfTomorrow } from "date-fns";
 import { defineNitroPlugin } from "nitropack/runtime/plugin";
 
 import type { CalendarEvent } from "../../app/types/calendar";
@@ -15,11 +16,12 @@ import type { ConnectedClient, ServerSyncEvent, SyncInterval } from "../../app/t
 
 import { integrationConfigs } from "../../app/integrations/integrationConfig";
 import { createIntegrationService, registerIntegration } from "../../app/types/integrations";
-import { setBroadcastFunction } from "../utils/broadcastHomeUpdate";
+import { broadcastHomeUpdate, setBroadcastFunction } from "../utils/broadcastHomeUpdate";
 
 const syncIntervals = new Map<string, SyncInterval>();
 const connectedClients = new Set<ConnectedClient>();
 const integrationServices = new Map<string, ServerTypedIntegrationService>();
+let shuttingDown = false;
 
 export default defineNitroPlugin(async (nitroApp) => {
   // Skip initialization during static generation (prevents hanging during 'nuxt generate')
@@ -62,9 +64,14 @@ export default defineNitroPlugin(async (nitroApp) => {
   // Set up weather broadcast job
   await initializeWeatherBroadcast();
 
+  // Set up midnight broadcast — pushes fresh widget data to all clients when the day rolls over
+  scheduleMidnightBroadcast();
+
   nitroApp.hooks.hook("close", () => {
     consola.info("Sync Manager: Shutting down...");
+    shuttingDown = true;
     if (weatherInterval) clearInterval(weatherInterval);
+    if (midnightTimeout) clearTimeout(midnightTimeout);
     clearAllSyncIntervals();
   });
 });
@@ -322,6 +329,35 @@ export function unregisterClient(event: H3Event) {
     connectedClients.delete(clientToRemove);
     consola.info(`Sync Manager: Client disconnected. Total clients: ${connectedClients.size}`);
   }
+}
+
+let midnightTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleMidnightBroadcast() {
+  if (shuttingDown) return;
+
+  const now = new Date();
+  const msUntilMidnight = differenceInMilliseconds(startOfTomorrow(), now) + 1000; // 1s past midnight
+
+  consola.debug(`Sync Manager: Midnight broadcast scheduled in ${Math.round(msUntilMidnight / 1000)}s`);
+
+  midnightTimeout = setTimeout(async () => {
+    consola.info("Sync Manager: Midnight broadcast — refreshing all widget data for new day");
+    try {
+      await Promise.all([
+        broadcastHomeUpdate("meals_update"),
+        broadcastHomeUpdate("todos_update"),
+        broadcastHomeUpdate("events_update"),
+        broadcastHomeUpdate("countdowns_update"),
+      ]);
+    }
+    catch (error) {
+      consola.error("Sync Manager: Midnight broadcast failed:", error);
+    }
+    finally {
+      scheduleMidnightBroadcast(); // re-schedule for next midnight
+    }
+  }, msUntilMidnight);
 }
 
 let weatherInterval: NodeJS.Timeout | null = null;
