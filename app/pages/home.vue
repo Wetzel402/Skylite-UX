@@ -266,9 +266,10 @@ function updateClock() {
   });
 
   // Detect midnight crossing — server broadcasts fresh widget data via SSE,
-  // but we still need to advance the displayed date/time on the client.
+  // but we still need to advance the displayed date/time and refresh weather.
   if (midnightDetector.check(now)) {
-    consola.info("[Home] Midnight crossing detected, clock display updated");
+    consola.info("[Home] Midnight crossing detected, refreshing weather for new day");
+    fetchWeather();
   }
 }
 

@@ -21,6 +21,7 @@ import { broadcastHomeUpdate, setBroadcastFunction } from "../utils/broadcastHom
 const syncIntervals = new Map<string, SyncInterval>();
 const connectedClients = new Set<ConnectedClient>();
 const integrationServices = new Map<string, ServerTypedIntegrationService>();
+let shuttingDown = false;
 
 export default defineNitroPlugin(async (nitroApp) => {
   // Skip initialization during static generation (prevents hanging during 'nuxt generate')
@@ -68,6 +69,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
   nitroApp.hooks.hook("close", () => {
     consola.info("Sync Manager: Shutting down...");
+    shuttingDown = true;
     if (weatherInterval) clearInterval(weatherInterval);
     if (midnightTimeout) clearTimeout(midnightTimeout);
     clearAllSyncIntervals();
@@ -332,6 +334,8 @@ export function unregisterClient(event: H3Event) {
 let midnightTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function scheduleMidnightBroadcast() {
+  if (shuttingDown) return;
+
   const now = new Date();
   const msUntilMidnight = differenceInMilliseconds(startOfTomorrow(), now) + 1000; // 1s past midnight
 
@@ -339,17 +343,12 @@ function scheduleMidnightBroadcast() {
 
   midnightTimeout = setTimeout(async () => {
     consola.info("Sync Manager: Midnight broadcast — refreshing all widget data for new day");
-    const results = await Promise.allSettled([
+    await Promise.all([
       broadcastHomeUpdate("meals_update"),
       broadcastHomeUpdate("todos_update"),
       broadcastHomeUpdate("events_update"),
       broadcastHomeUpdate("countdowns_update"),
     ]);
-    for (const result of results) {
-      if (result.status === "rejected") {
-        consola.error("Sync Manager: Midnight broadcast partially failed:", result.reason);
-      }
-    }
     scheduleMidnightBroadcast(); // re-schedule for next midnight
   }, msUntilMidnight);
 }
