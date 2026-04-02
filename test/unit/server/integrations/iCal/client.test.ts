@@ -33,6 +33,28 @@ const minimalIcalWithRrule = (() => {
   ].join("\r\n");
 })();
 
+const coziStyleBirthdayPlusGoodEvent = [
+  "BEGIN:VCALENDAR",
+  "VERSION:2.0",
+  "PRODID:-//test//EN",
+  "BEGIN:VEVENT",
+  "UID:good-flatmate",
+  "SUMMARY:Good Flatmate Event",
+  "DTSTART:20250115T100000Z",
+  "DTEND:20250115T110000Z",
+  "END:VEVENT",
+  "BEGIN:VEVENT",
+  "SUMMARY:Birthday",
+  "DTSTART:20131231",
+  "DTEND:20140101",
+  "DTSTAMP:20260330T234139Z",
+  "UID:6a24d576-b19d-4746-943a-d8289ff5cb7f@cozi.com",
+  "SEQUENCE:6377",
+  "RRULE:FREQ=YEARLY;BYMONTHDAY=-1;BYMONTH=12",
+  "END:VEVENT",
+  "END:VCALENDAR",
+].join("\r\n");
+
 describe("ICalServerService", () => {
   let service: ICalServerService;
 
@@ -300,6 +322,48 @@ describe("ICalServerService", () => {
       for (const e of events) {
         const d = new Date(e.dtstart);
         expect(d >= start && d <= end).toBe(true);
+      }
+    });
+
+    it("parses Cozi-style all-day DATE DTSTART with YEARLY RRULE and keeps a flatmate event", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve(coziStyleBirthdayPlusGoodEvent),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const events = await service.fetchEventsFromUrl("https://example.com/cozi.ics");
+
+      const flatmate = events.filter(e => e.uid === "good-flatmate");
+      expect(flatmate).toHaveLength(1);
+      expect(flatmate[0]?.summary).toBe("Good Flatmate Event");
+
+      const birthday = events.filter(e => e.uid.includes("6a24d576-b19d-4746-943a-d8289ff5cb7f@cozi.com"));
+      expect(birthday.length).toBeGreaterThan(0);
+      for (const e of birthday) {
+        const d = new Date(e.dtstart);
+        expect(d.getUTCMonth()).toBe(11);
+        expect(d.getUTCDate()).toBe(31);
+      }
+    });
+
+    it("with ical strict mode, skips corrupted recurring VEVENT but still returns the good one", async () => {
+      const prevStrict = ical.design.strict;
+      ical.design.strict = true;
+      try {
+        const fetchMock = vi.fn().mockResolvedValue({
+          ok: true,
+          text: () => Promise.resolve(coziStyleBirthdayPlusGoodEvent),
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        const events = await service.fetchEventsFromUrl("https://example.com/cozi.ics");
+
+        expect(events.filter(e => e.uid === "good-flatmate")).toHaveLength(1);
+        expect(events.some(e => e.uid.includes("6a24d576"))).toBe(false);
+      }
+      finally {
+        ical.design.strict = prevStrict;
       }
     });
   });
