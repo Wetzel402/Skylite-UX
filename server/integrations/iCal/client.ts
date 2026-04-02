@@ -3,6 +3,8 @@ import ical from "ical.js";
 
 import type { ICalEvent } from "./types";
 
+ical.design.strict = false;
+
 export class ICalServerService {
   constructor(private integrationId: string, private url: string) {}
 
@@ -20,18 +22,58 @@ export class ICalServerService {
     const endDate = new Date(now.getFullYear() + 2, now.getMonth(), now.getDate());
 
     for (const vevent of vevents) {
-      const rrule = vevent.getFirstPropertyValue("rrule");
+      try {
+        const rrule = vevent.getFirstPropertyValue("rrule");
 
-      if (rrule) {
-        const expandedEvents = this.expandRecurringEvent(vevent, startDate, endDate);
-        events.push(...expandedEvents);
+        if (rrule) {
+          events.push(...this.expandRecurringEvent(vevent, startDate, endDate));
+        }
+        else {
+          const parsed = this.parseICalEventOrNull(vevent);
+          if (parsed) {
+            events.push(parsed);
+          }
+          else {
+            consola.warn(
+              "ICalServerService: Skipping VEVENT (parse failed):",
+              this.getVeventUidForLog(vevent),
+            );
+          }
+        }
       }
-      else {
-        events.push(this.parseICalEvent(vevent));
+      catch (error) {
+        consola.warn(
+          "ICalServerService: Skipping VEVENT:",
+          this.getVeventUidForLog(vevent),
+          error,
+        );
       }
     }
 
     return events;
+  }
+
+  private getVeventUidForLog(vevent: ical.Component): string {
+    try {
+      const prop = vevent.getFirstProperty("uid");
+      if (!prop) {
+        return "unknown";
+      }
+      const raw = prop.jCal[3];
+      return typeof raw === "string" ? raw : "unknown";
+    }
+    catch {
+      return "unknown";
+    }
+  }
+
+  private parseICalEventOrNull(vevent: ical.Component): ICalEvent | null {
+    try {
+      return this.parseICalEvent(vevent);
+    }
+    catch {
+      return null;
+    }
   }
 
   private parseICalEvent(vevent: ical.Component): ICalEvent {
@@ -103,7 +145,8 @@ export class ICalServerService {
       const dtstart = vevent.getFirstPropertyValue("dtstart") as ical.Time;
 
       if (!recurrence || !dtstart) {
-        return [this.parseICalEvent(vevent)];
+        const parsed = this.parseICalEventOrNull(vevent);
+        return parsed ? [parsed] : [];
       }
 
       const expansion = new ical.RecurExpansion({
@@ -138,7 +181,14 @@ export class ICalServerService {
     }
     catch (error) {
       consola.warn("ICalServerService: Failed to expand recurring event:", error);
-      return [this.parseICalEvent(vevent)];
+      const parsed = this.parseICalEventOrNull(vevent);
+      if (!parsed) {
+        consola.warn(
+          "ICalServerService: Skipping recurring VEVENT after expand failure:",
+          this.getVeventUidForLog(vevent),
+        );
+      }
+      return parsed ? [parsed] : [];
     }
 
     return events;
