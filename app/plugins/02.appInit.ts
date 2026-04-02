@@ -23,6 +23,8 @@ import {
   registerIntegration,
 } from "~/types/integrations";
 
+ical.design.strict = false;
+
 export const integrationServices = new Map<string, IntegrationService>();
 
 export default defineNuxtPlugin(async () => {
