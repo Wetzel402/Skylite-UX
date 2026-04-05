@@ -76,6 +76,9 @@ class SkyliteWidget4x2 : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.layoutTomorrowMeals, pendingIntent)
                 views.setOnClickPendingIntent(R.id.tvTodayHeader, pendingIntent)
                 views.setOnClickPendingIntent(R.id.tvTomorrowHeader, pendingIntent)
+                views.setOnClickPendingIntent(R.id.tvTodayEmpty, pendingIntent)
+                views.setOnClickPendingIntent(R.id.tvTomorrowEmpty, pendingIntent)
+                views.setOnClickPendingIntent(R.id.tvError, pendingIntent)
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }
