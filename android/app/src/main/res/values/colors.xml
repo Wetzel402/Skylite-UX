@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">#1a1a2e</color>
+    <color name="widget_text_primary">#ffffff</color>
+    <color name="widget_text_secondary">#9ca3af</color>
+    <color name="widget_accent">#0ea5e9</color>
+    <color name="widget_divider">#374151</color>
+    <color name="widget_section_header">#0ea5e9</color>
+    <color name="widget_error">#ef4444</color>
+    <color name="widget_meal_breakfast">#f59e0b</color>
+    <color name="widget_meal_lunch">#22c55e</color>
+    <color name="widget_meal_dinner">#ef4444</color>
+</resources>

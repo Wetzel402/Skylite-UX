@@ -35,6 +35,32 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- 4x2 Meal Widget -->
+        <receiver
+            android:name=".SkyliteWidget4x2"
+            android:exported="true"
+            android:label="Skylite Meals (Wide)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_4x2" />
+        </receiver>
+
+        <!-- 2x2 Meal Widget -->
+        <receiver
+            android:name=".SkyliteWidget2x2"
+            android:exported="true"
+            android:label="Skylite Meals">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_2x2" />
+        </receiver>
     </application>
 
     <!-- Permissions -->
