@@ -26,7 +26,7 @@ data class WidgetData(
 
 object WidgetDataFetcher {
     private const val TAG = "WidgetDataFetcher"
-    private const val PREFS_NAME = "com.skylite.app_preferences"
+    private const val PREFS_NAME = "CapacitorStorage"
     private const val KEY_SERVER_URL = "serverUrl"
     private const val TIMEOUT_MS = 10000
 
@@ -81,28 +81,29 @@ object WidgetDataFetcher {
                 Log.d(TAG, "Fetching meal plans from: $apiUrl")
 
                 val connection = URL(apiUrl).openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = TIMEOUT_MS
-                connection.readTimeout = TIMEOUT_MS
-                connection.setRequestProperty("Accept", "application/json")
+                try {
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = TIMEOUT_MS
+                    connection.readTimeout = TIMEOUT_MS
+                    connection.setRequestProperty("Accept", "application/json")
 
-                val responseCode = connection.responseCode
+                    val responseCode = connection.responseCode
+                    if (responseCode != HttpURLConnection.HTTP_OK) {
+                        return@withContext WidgetData(
+                            todayMeals = emptyList(),
+                            tomorrowMeals = emptyList(),
+                            error = "Server error: $responseCode"
+                        )
+                    }
 
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    return@withContext WidgetData(
-                        todayMeals = emptyList(),
-                        tomorrowMeals = emptyList(),
-                        error = "Server error: $responseCode"
-                    )
+                    val response = BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
+                        reader.readText()
+                    }
+
+                    parseMealPlans(response)
+                } finally {
+                    connection.disconnect()
                 }
-
-                val response = BufferedReader(InputStreamReader(connection.inputStream)).use { reader ->
-                    reader.readText()
-                }
-
-                connection.disconnect()
-
-                parseMealPlans(response)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to fetch widget data", e)
                 WidgetData(
@@ -144,8 +145,9 @@ object WidgetDataFetcher {
                 else -> -1
             }
             if (dayOfWeek !in 0..6) continue
-            val name = meal.getString("name")
-            val mealType = meal.optString("mealType", "DINNER")
+            val name = meal.optString("name", "").trim()
+            if (name.isEmpty()) continue
+            val mealType = meal.optString("mealType", "DINNER").uppercase()
             val mealTypeLabel = mealTypeLabels[mealType] ?: mealType
 
             val mealInfo = MealInfo(
