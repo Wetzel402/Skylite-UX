@@ -109,7 +109,10 @@ const mealEvents = computed(() => mealsData.value || []);
 
 // Convert meal to calendar event
 function mealToCalendarEvent(meal: MealWithDate): CalendarEvent {
-  const mealDate = new Date(meal.calculatedDate);
+  // calculatedDate is UTC midnight from the server — extract UTC components
+  // to build a local date so the meal appears on the correct calendar day
+  const utcDate = new Date(meal.calculatedDate);
+  const mealDate = new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate());
   const timeMap: Record<MealType, { hour: number; minute: number }> = {
     BREAKFAST: { hour: 8, minute: 0 },
     LUNCH: { hour: 12, minute: 0 },

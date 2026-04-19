@@ -51,7 +51,9 @@ function initDays() {
 function getMealsForDate(date: Date): MealWithDate[] {
   const dateStr = format(date, "yyyy-MM-dd");
   return meals.value.filter((m) => {
-    const mealDateStr = format(new Date(m.calculatedDate), "yyyy-MM-dd");
+    // Use UTC components since calculatedDate is UTC midnight from the server
+    const utc = new Date(m.calculatedDate);
+    const mealDateStr = format(new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate()), "yyyy-MM-dd");
     return mealDateStr === dateStr;
   });
 }

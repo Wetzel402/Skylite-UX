@@ -518,9 +518,10 @@ async function fetchTodaysMenu() {
     const mealTypeOrder: Record<string, number> = { BREAKFAST: 0, LUNCH: 1, DINNER: 2 };
 
     // Separate today's and tomorrow's meals
+    // Use UTC methods since calculatedDate is computed in UTC on the server
     const todayMeals = response.filter((meal: any) => {
       const mealDate = new Date(meal.calculatedDate);
-      const mealDateStr = `${mealDate.getFullYear()}-${String(mealDate.getMonth() + 1).padStart(2, "0")}-${String(mealDate.getDate()).padStart(2, "0")}`;
+      const mealDateStr = `${mealDate.getUTCFullYear()}-${String(mealDate.getUTCMonth() + 1).padStart(2, "0")}-${String(mealDate.getUTCDate()).padStart(2, "0")}`;
       return mealDateStr === today;
     }).sort((a: any, b: any) =>
       (mealTypeOrder[a.mealType] ?? 999) - (mealTypeOrder[b.mealType] ?? 999),
@@ -528,7 +529,7 @@ async function fetchTodaysMenu() {
 
     const tomorrowMeals = response.filter((meal: any) => {
       const mealDate = new Date(meal.calculatedDate);
-      const mealDateStr = `${mealDate.getFullYear()}-${String(mealDate.getMonth() + 1).padStart(2, "0")}-${String(mealDate.getDate()).padStart(2, "0")}`;
+      const mealDateStr = `${mealDate.getUTCFullYear()}-${String(mealDate.getUTCMonth() + 1).padStart(2, "0")}-${String(mealDate.getUTCDate()).padStart(2, "0")}`;
       return mealDateStr === tomorrowStr;
     }).sort((a: any, b: any) =>
       (mealTypeOrder[a.mealType] ?? 999) - (mealTypeOrder[b.mealType] ?? 999),
