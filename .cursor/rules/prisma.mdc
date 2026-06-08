@@ -9,4 +9,6 @@ You are an expert in PostgreSQL and Prisma ORM.
 
 - Database is PostgreSQL. Use Prisma Client for all DB access.
 - Schema lives in `prisma/schema.prisma`. Run migrations via `prisma migrate`.
+- **Development (schema changes):** `prisma migrate dev --name <descriptive_name>`
+- **Devcontainer / Docker / production:** `prisma migrate deploy`
 - Binary targets in schema include `linux-arm64-openssl-3.0.x` and `debian-openssl-3.0.x` for deployment; do not remove them.
