@@ -19,13 +19,17 @@ vi.mock("h3", async () => {
   };
 });
 
-vi.mock("googleapis", () => ({
-  google: {
-    auth: {
-      OAuth2: vi.fn(),
-    },
-  },
-}));
+const mockCreateGoogleOAuth2Client = vi.hoisted(() => vi.fn());
+
+vi.mock("~~/server/integrations/google_calendar/client", async () => {
+  const actual = await vi.importActual<typeof import("~~/server/integrations/google_calendar/client")>(
+    "~~/server/integrations/google_calendar/client",
+  );
+  return {
+    ...actual,
+    createGoogleOAuth2Client: mockCreateGoogleOAuth2Client,
+  };
+});
 
 import handler from "~~/server/api/integrations/google_calendar/exchangeToken.post";
 
@@ -36,7 +40,6 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
 
   describe("success flow", () => {
     it("exchanges auth code for refresh token", async () => {
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockResolvedValue({
         tokens: {
           refresh_token: "refresh-token-123",
@@ -48,7 +51,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -66,7 +69,6 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
     });
 
     it("works with empty clientSecret", async () => {
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockResolvedValue({
         tokens: {
           refresh_token: "refresh-token-123",
@@ -78,7 +80,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -147,7 +149,6 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
     });
 
     it("throws 400 when no refresh token received", async () => {
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockResolvedValue({
         tokens: {
           access_token: "access-token",
@@ -158,7 +159,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -173,13 +174,12 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
     });
 
     it("handles OAuth errors", async () => {
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockRejectedValue(new Error("Invalid grant"));
       const mockOAuth2 = {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -194,7 +194,6 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
     });
 
     it("handles Google API errors", async () => {
-      const { google } = await import("googleapis");
       const apiError = {
         code: 400,
         message: "Invalid request",
@@ -204,7 +203,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",

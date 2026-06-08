@@ -1,12 +1,21 @@
-import type { calendar_v3 } from "googleapis";
+import type { calendar_v3 } from "@googleapis/calendar";
 
+import { calendar } from "@googleapis/calendar";
 import consola from "consola";
-import { google } from "googleapis";
+import { OAuth2Client } from "google-auth-library";
 
 import type { GoogleCalendarEvent, GoogleCalendarListItem } from "./types";
 
+export function createGoogleOAuth2Client(
+  clientId: string,
+  clientSecret: string,
+  redirectUri: string,
+): OAuth2Client {
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
+}
+
 export class GoogleCalendarServerService {
-  private oauth2Client;
+  private oauth2Client: OAuth2Client;
   private calendar: calendar_v3.Calendar;
   private refreshPromise: Promise<void> | null = null;
   private integrationId?: string;
@@ -23,7 +32,7 @@ export class GoogleCalendarServerService {
   ) {
     this.integrationId = integrationId;
     this.onTokenRefresh = onTokenRefresh;
-    this.oauth2Client = new google.auth.OAuth2(
+    this.oauth2Client = createGoogleOAuth2Client(
       clientId,
       clientSecret,
       "postmessage",
@@ -35,7 +44,7 @@ export class GoogleCalendarServerService {
       expiry_date: expiry,
     });
 
-    this.calendar = google.calendar({ version: "v3", auth: this.oauth2Client });
+    this.calendar = calendar({ version: "v3", auth: this.oauth2Client });
   }
 
   async refreshAccessToken(): Promise<void> {

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build stage
-FROM --platform=$BUILDPLATFORM dhi.io/node:20-debian13-dev AS builder
+FROM --platform=$BUILDPLATFORM dhi.io/node:22-debian13-dev AS builder
 
 # Set working directory
 WORKDIR /app
@@ -25,7 +25,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM dhi.io/node:20-debian13-dev AS production
+FROM dhi.io/node:22-debian13-dev AS production
 
 # Set environment variables
 ENV NODE_ENV=production

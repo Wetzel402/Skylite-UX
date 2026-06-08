@@ -19,6 +19,7 @@ export default defineNuxtConfig({
 
   modules: [
     "@nuxt/ui",
+    "@vueuse/nuxt",
     "@nuxt/fonts",
     "@nuxt/eslint",
     "@nuxtjs/html-validator",

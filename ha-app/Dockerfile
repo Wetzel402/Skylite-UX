@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build stage (same structure as root Dockerfile)
-FROM --platform=$BUILDPLATFORM dhi.io/node:20-debian13-dev AS builder
+FROM --platform=$BUILDPLATFORM dhi.io/node:22-debian13-dev AS builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM dhi.io/node:20-debian13-dev AS production
+FROM dhi.io/node:22-debian13-dev AS production
 
 ARG BUILD_VERSION=dev
 ARG TARGETARCH

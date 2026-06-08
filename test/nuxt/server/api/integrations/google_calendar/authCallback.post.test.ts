@@ -29,13 +29,17 @@ vi.mock("h3", async () => {
   };
 });
 
-vi.mock("googleapis", () => ({
-  google: {
-    auth: {
-      OAuth2: vi.fn(),
-    },
-  },
-}));
+const mockCreateGoogleOAuth2Client = vi.hoisted(() => vi.fn());
+
+vi.mock("~~/server/integrations/google_calendar/client", async () => {
+  const actual = await vi.importActual<typeof import("~~/server/integrations/google_calendar/client")>(
+    "~~/server/integrations/google_calendar/client",
+  );
+  return {
+    ...actual,
+    createGoogleOAuth2Client: mockCreateGoogleOAuth2Client,
+  };
+});
 
 import handler from "~~/server/api/integrations/google_calendar/authCallback.post";
 
@@ -66,7 +70,6 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
   describe("success flow", () => {
     it("exchanges auth code for refresh token and updates integration", async () => {
       const mockIntegration = createBaseIntegration();
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockResolvedValue({
         tokens: {
           refresh_token: "refresh-token",
@@ -84,7 +87,7 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
         apiKey: "refresh-token",
       } as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -194,7 +197,6 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
 
     it("throws 400 when no refresh token received", async () => {
       const mockIntegration = createBaseIntegration();
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockResolvedValue({
         tokens: {
           access_token: "access-token",
@@ -207,7 +209,7 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -222,7 +224,6 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
 
     it("handles OAuth errors", async () => {
       const mockIntegration = createBaseIntegration();
-      const { google } = await import("googleapis");
       const mockGetToken = vi.fn().mockRejectedValue(new Error("Invalid grant"));
       const mockOAuth2 = {
         getToken: mockGetToken,
@@ -230,7 +231,7 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",
@@ -245,7 +246,6 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
 
     it("handles Google API errors", async () => {
       const mockIntegration = createBaseIntegration();
-      const { google } = await import("googleapis");
       const apiError = {
         code: 400,
         message: "Invalid request",
@@ -257,7 +257,7 @@ describe("POST /api/integrations/google_calendar/authCallback", () => {
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "POST",

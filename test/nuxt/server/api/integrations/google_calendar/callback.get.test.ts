@@ -30,13 +30,17 @@ vi.mock("h3", async () => {
   };
 });
 
-vi.mock("googleapis", () => ({
-  google: {
-    auth: {
-      OAuth2: vi.fn(),
-    },
-  },
-}));
+const mockCreateGoogleOAuth2Client = vi.hoisted(() => vi.fn());
+
+vi.mock("~~/server/integrations/google_calendar/client", async () => {
+  const actual = await vi.importActual<typeof import("~~/server/integrations/google_calendar/client")>(
+    "~~/server/integrations/google_calendar/client",
+  );
+  return {
+    ...actual,
+    createGoogleOAuth2Client: mockCreateGoogleOAuth2Client,
+  };
+});
 
 import { sendRedirect } from "h3";
 import handler from "~~/server/api/integrations/google_calendar/callback.get";
@@ -90,7 +94,6 @@ describe("GET /api/integrations/google_calendar/callback", () => {
 
   describe("new integration creation", () => {
     it("creates new integration with refresh token", async () => {
-      const { google } = await import("googleapis");
       const stateData = createStateData(false);
       const state = encodeURIComponent(JSON.stringify(stateData));
       const mockGetToken = vi.fn().mockResolvedValue({
@@ -111,7 +114,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
 
       prisma.integration.create.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.create>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "GET",
@@ -150,7 +153,6 @@ describe("GET /api/integrations/google_calendar/callback", () => {
 
   describe("re-authentication", () => {
     it("updates existing integration with new refresh token", async () => {
-      const { google } = await import("googleapis");
       const stateData = createStateData(true);
       const state = encodeURIComponent(JSON.stringify(stateData));
       const mockIntegration = createBaseIntegration();
@@ -171,7 +173,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
         apiKey: "new-refresh-token",
       } as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "GET",
@@ -431,7 +433,6 @@ describe("GET /api/integrations/google_calendar/callback", () => {
     });
 
     it("redirects with error when no refresh token received", async () => {
-      const { google } = await import("googleapis");
       const stateData = createStateData(false);
       const state = encodeURIComponent(JSON.stringify(stateData));
       const mockGetToken = vi.fn().mockResolvedValue({
@@ -444,7 +445,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "GET",
@@ -463,7 +464,6 @@ describe("GET /api/integrations/google_calendar/callback", () => {
     });
 
     it("handles OAuth errors and redirects with error", async () => {
-      const { google } = await import("googleapis");
       const stateData = createStateData(false);
       const state = encodeURIComponent(JSON.stringify(stateData));
       const mockGetToken = vi.fn().mockRejectedValue(new Error("Invalid grant"));
@@ -471,7 +471,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      mockCreateGoogleOAuth2Client.mockImplementation(() => mockOAuth2 as never);
 
       const event = createMockH3Event({
         method: "GET",

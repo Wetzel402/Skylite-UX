@@ -1,5 +1,5 @@
+import { createGoogleOAuth2Client } from "~~/server/integrations/google_calendar/client";
 import { consola } from "consola";
-import { google } from "googleapis";
 import { createError, defineEventHandler, readBody } from "h3";
 
 export default defineEventHandler(async (event) => {
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const oauth2Client = new google.auth.OAuth2(
+  const oauth2Client = createGoogleOAuth2Client(
     clientId,
     clientSecret || "",
     "postmessage",

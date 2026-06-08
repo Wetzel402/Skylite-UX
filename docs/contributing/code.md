@@ -441,7 +441,7 @@ Release builds utilize the [CalVer](https://calver.org) YYYY.MM.Micro standard.
 # Login to Docker Hub (required for base image authentication)
 docker login
 
-# Build Docker image (uses dhi.io/node:20, same as production)
+# Build Docker image (uses dhi.io/node:22, same as production)
 docker build -t skylite-ux .
 
 # Create a network

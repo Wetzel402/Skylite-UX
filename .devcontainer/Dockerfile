@@ -1,4 +1,6 @@
-FROM node:20
+FROM node:22
+
+RUN npm install -g npm@11
 
 # Install basic development tools
 RUN apt update && apt install -y less man-db sudo

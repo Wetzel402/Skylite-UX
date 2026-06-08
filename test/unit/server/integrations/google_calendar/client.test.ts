@@ -9,7 +9,7 @@ const mockEventsUpdate = vi.fn().mockResolvedValue({ data: {} });
 const mockEventsDelete = vi.fn().mockResolvedValue(undefined);
 const mockEventsInsert = vi.fn().mockResolvedValue({ data: {} });
 
-vi.mock("googleapis", () => {
+vi.mock("google-auth-library", () => {
   const OAuth2Mock = vi.fn().mockImplementation(function (this: {
     setCredentials: ReturnType<typeof vi.fn>;
     credentials: { expiry_date: number; access_token?: string };
@@ -20,22 +20,21 @@ vi.mock("googleapis", () => {
     this.refreshAccessToken = vi.fn().mockResolvedValue(undefined);
     return this;
   });
-  return {
-    google: {
-      auth: { OAuth2: OAuth2Mock },
-      calendar: vi.fn(() => ({
-        calendarList: { list: mockCalendarListList },
-        events: {
-          list: mockEventsList,
-          get: mockEventsGet,
-          update: mockEventsUpdate,
-          delete: mockEventsDelete,
-          insert: mockEventsInsert,
-        },
-      })),
-    },
-  };
+  return { OAuth2Client: OAuth2Mock };
 });
+
+vi.mock("@googleapis/calendar", () => ({
+  calendar: vi.fn(() => ({
+    calendarList: { list: mockCalendarListList },
+    events: {
+      list: mockEventsList,
+      get: mockEventsGet,
+      update: mockEventsUpdate,
+      delete: mockEventsDelete,
+      insert: mockEventsInsert,
+    },
+  })),
+}));
 
 import { GoogleCalendarServerService } from "../../../../../server/integrations/google_calendar/client";
 
