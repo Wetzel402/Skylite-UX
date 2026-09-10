@@ -192,4 +192,109 @@ describe("GlobalList", () => {
     expect(wrapper.text()).toContain("Native");
     expect(wrapper.text()).toContain("Integration");
   });
+
+  it("renders item name as a clickable button and emits viewItem when showDetail", async () => {
+    const list = baseShoppingList({
+      id: "list-1",
+      name: "Groceries",
+      order: 1,
+      items: [
+        { id: "item-1", name: "Milk", checked: false, order: 1, notes: null, quantity: 1, unit: null, label: null, food: null },
+      ] as ShoppingListItem[],
+    });
+    const wrapper = await mountSuspended(GlobalList, {
+      props: {
+        lists: [list],
+        loading: false,
+        showDetail: true,
+      },
+    });
+    const button = wrapper.find("button.hover\\:underline");
+    expect(button.exists()).toBe(true);
+    expect(button.text()).toBe("Milk");
+
+    await button.trigger("click");
+    expect(wrapper.emitted("viewItem")?.[0]?.[0]).toMatchObject({ id: "item-1" });
+  });
+
+  it("renders item name as plain text (no detail button) when showDetail is not set", async () => {
+    const list = baseShoppingList({
+      id: "list-1",
+      name: "Groceries",
+      order: 1,
+      items: [
+        { id: "item-1", name: "Milk", checked: false, order: 1, notes: null, quantity: 1, unit: null, label: null, food: null },
+      ] as ShoppingListItem[],
+    });
+    const wrapper = await mountSuspended(GlobalList, {
+      props: {
+        lists: [list],
+        loading: false,
+      },
+    });
+    expect(wrapper.find("button.hover\\:underline").exists()).toBe(false);
+    expect(wrapper.text()).toContain("Milk");
+  });
+
+  it("shows hidden item count in the progress line when hiddenItemCount is set", async () => {
+    const list = baseShoppingList({
+      id: "list-1",
+      name: "Tasks",
+      order: 1,
+      hiddenItemCount: 9,
+      items: [
+        { id: "i1", name: "A", checked: true, order: 1, notes: null, quantity: 1, unit: null, label: null, food: null },
+        { id: "i2", name: "B", checked: false, order: 2, notes: null, quantity: 1, unit: null, label: null, food: null },
+      ] as ShoppingListItem[],
+    });
+    const wrapper = await mountSuspended(GlobalList, {
+      props: { lists: [list], loading: false, showProgress: true },
+    });
+    expect(wrapper.text()).toContain("9 hidden");
+  });
+
+  it("omits the hidden note when hiddenItemCount is unset", async () => {
+    const list = baseShoppingList({
+      id: "list-1",
+      name: "Tasks",
+      order: 1,
+      items: [
+        { id: "i1", name: "A", checked: true, order: 1, notes: null, quantity: 1, unit: null, label: null, food: null },
+      ] as ShoppingListItem[],
+    });
+    const wrapper = await mountSuspended(GlobalList, {
+      props: { lists: [list], loading: false, showProgress: true },
+    });
+    expect(wrapper.text()).not.toContain("hidden");
+  });
+
+  it("shows a filter-aware empty state when items are empty and hiddenItemCount is set", async () => {
+    const list = baseShoppingList({
+      id: "list-1",
+      name: "Tasks",
+      order: 1,
+      items: [],
+      hiddenItemCount: 4,
+    });
+    const wrapper = await mountSuspended(GlobalList, {
+      props: { lists: [list], loading: false },
+    });
+    expect(wrapper.text()).toContain("No items match the current filter");
+    expect(wrapper.text()).toContain("4 hidden by the current filter");
+    expect(wrapper.text()).not.toContain("No items yet");
+  });
+
+  it("shows the default empty state when items are empty and hiddenItemCount is unset", async () => {
+    const list = baseShoppingList({
+      id: "list-1",
+      name: "Tasks",
+      order: 1,
+      items: [],
+    });
+    const wrapper = await mountSuspended(GlobalList, {
+      props: { lists: [list], loading: false },
+    });
+    expect(wrapper.text()).toContain("No items yet");
+    expect(wrapper.text()).toContain("Add your first item to get started");
+  });
 });
