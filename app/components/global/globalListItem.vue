@@ -7,6 +7,8 @@ import type {
 } from "~/types/database";
 import type { ReorderDirectionEvent, ToggleEvent } from "~/types/ui";
 
+import { getPriorityColor } from "~/types/ui";
+
 defineProps<{
   item: BaseListItem;
   index: number;
@@ -15,10 +17,12 @@ defineProps<{
   showNotes?: boolean;
   showReorder?: boolean;
   showEdit?: boolean | ((item: BaseListItem) => boolean);
+  showDetail?: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "edit", item: BaseListItem): void;
+  (e: "view", item: BaseListItem): void;
   (e: "toggle", payload: ToggleEvent): void;
   (e: "reorder", payload: ReorderDirectionEvent): void;
 }>();
@@ -31,21 +35,6 @@ function isTodoItem(
   item: BaseListItem,
 ): item is TodoListItem & { priority?: Priority; dueDate?: Date | null } {
   return "shoppingListId" in item;
-}
-
-function getPriorityColor(priority: Priority) {
-  switch (priority) {
-    case "LOW":
-      return "text-green-600 bg-green-50 dark:bg-green-950";
-    case "MEDIUM":
-      return "text-yellow-600 bg-yellow-50 dark:bg-yellow-950";
-    case "HIGH":
-      return "text-orange-600 bg-orange-50 dark:bg-orange-950";
-    case "URGENT":
-      return "text-red-600 bg-red-50 dark:bg-red-950";
-    default:
-      return "text-muted bg-muted";
-  }
 }
 </script>
 
@@ -67,7 +56,17 @@ function getPriorityColor(priority: Priority) {
     />
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2">
+        <button
+          v-if="showDetail"
+          type="button"
+          class="text-sm font-medium text-highlighted truncate text-left hover:underline"
+          :class="{ 'line-through': item.checked }"
+          @click.stop="emit('view', item)"
+        >
+          {{ item.name }}
+        </button>
         <span
+          v-else
           class="text-sm font-medium text-highlighted truncate"
           :class="{ 'line-through': item.checked }"
         >
