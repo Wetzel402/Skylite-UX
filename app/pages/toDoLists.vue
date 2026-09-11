@@ -10,24 +10,29 @@ import type {
   TodoList,
   TodoListItem,
 } from "~/types/database";
-import type { TodoListWithIntegration, TodoSortMode } from "~/types/ui";
+import type { TodoDueRange, TodoListWithIntegration, TodoSortMode } from "~/types/ui";
 
 import GlobalFloatingActionButton from "~/components/global/globalFloatingActionButton.vue";
 import GlobalList from "~/components/global/globalList.vue";
 import TodoColumnDialog from "~/components/todos/todoColumnDialog.vue";
+import TodoDetailDialog from "~/components/todos/todoDetailDialog.vue";
 import TodoItemDialog from "~/components/todos/todoItemDialog.vue";
 import { useClientPreferences } from "~/composables/useClientPreferences";
 import { useStableDate } from "~/composables/useStableDate";
 import { useTodoColumns } from "~/composables/useTodoColumns";
 import { useTodos } from "~/composables/useTodos";
+import { getDueRangeCutoff, isTodoWithinDueRange } from "~/types/ui";
 
 import type { ICalEvent } from "../../server/integrations/iCal/types";
 
-const { parseStableDate } = useStableDate();
+const { getStableDate, parseStableDate } = useStableDate();
 const { preferences, updatePreferences } = useClientPreferences();
 
 const todoSortBy = computed<TodoSortMode>(
   () => preferences.value?.todoSortBy ?? "date",
+);
+const todoDueRange = computed<TodoDueRange>(
+  () => preferences.value?.todoDueRange ?? "all",
 );
 
 const PRIORITY_ORDER: Record<string, number> = {
@@ -111,13 +116,38 @@ const mutableTodoColumns = computed(
 
 const todoItemDialog = ref(false);
 const todoColumnDialog = ref(false);
+const todoDetailDialog = ref(false);
 const editingTodo = ref<TodoListItem | null>(null);
 const editingColumn = ref<TodoList | null>(null);
+const viewingTodo = ref<TodoListItem | null>(null);
 const reorderingColumns = ref(new Set<string>());
 
 const editingTodoTyped = computed<TodoListItem | undefined>(
   () => editingTodo.value as TodoListItem | undefined,
 );
+
+function toTodoListItem(item: BaseListItem): TodoListItem | null {
+  if (!todos.value)
+    return null;
+  const todo = todos.value.find(t => t.id === item.id);
+  if (!todo)
+    return null;
+
+  return {
+    id: todo.id,
+    name: todo.title,
+    description: todo.description ?? "",
+    priority: todo.priority,
+    dueDate: todo.dueDate ? parseStableDate(todo.dueDate) : null,
+    todoColumnId: todo.todoColumnId ?? "",
+    checked: todo.completed,
+    order: todo.order,
+    shoppingListId: todo.todoColumnId || "",
+    notes: todo.description,
+    recurringGroupId: todo.recurringGroupId,
+    rrule: (todo.rrule as ICalEvent["rrule"] | null) ?? undefined,
+  };
+}
 
 const todoLists = computed<TodoListWithIntegration[]>(() => {
   if (!todoColumns.value || !todos.value)
@@ -125,8 +155,19 @@ const todoLists = computed<TodoListWithIntegration[]>(() => {
 
   const sortMode = todoSortBy.value;
   const compare = getTodoComparator(sortMode);
+  const cutoff = getDueRangeCutoff(todoDueRange.value, getStableDate());
+
   return todoColumns.value.map((column) => {
-    const columnTodos = todos.value!.filter(todo => todo.todoColumnId === column.id);
+    const allColumnTodos = todos.value!.filter(
+      todo => todo.todoColumnId === column.id,
+    );
+    const columnTodos = allColumnTodos.filter(todo =>
+      isTodoWithinDueRange(
+        todo.dueDate ? parseStableDate(todo.dueDate) : null,
+        todo.completed,
+        cutoff,
+      ),
+    );
     const sorted = [...columnTodos].sort(compare);
     return {
       id: column.id,
@@ -136,6 +177,7 @@ const todoLists = computed<TodoListWithIntegration[]>(() => {
       updatedAt: parseStableDate(column.updatedAt),
       isDefault: column.isDefault,
       source: "native" as const,
+      hiddenItemCount: allColumnTodos.length - columnTodos.length,
       items: sorted.map(todo => ({
         id: todo.id,
         name: todo.title,
@@ -155,32 +197,40 @@ const todoLists = computed<TodoListWithIntegration[]>(() => {
   });
 });
 
+const todoFilterSummary = computed(() => {
+  const hidden = todoLists.value.reduce(
+    (n, list) => n + (list.hiddenItemCount ?? 0),
+    0,
+  );
+  const visible = todoLists.value.reduce((n, list) => n + list.items.length, 0);
+  return { hidden, visible, total: visible + hidden };
+});
+
 function openCreateTodo(todoColumnId?: string) {
   editingTodo.value = { todoColumnId: todoColumnId ?? "" } as TodoListItem;
   todoItemDialog.value = true;
 }
 
 function openEditTodo(item: BaseListItem) {
-  if (!todos.value)
-    return;
-  const todo = todos.value.find(t => t.id === item.id);
+  const todo = toTodoListItem(item);
   if (!todo)
     return;
+  editingTodo.value = todo;
+  todoItemDialog.value = true;
+}
 
-  editingTodo.value = {
-    id: todo.id,
-    name: todo.title,
-    description: todo.description ?? "",
-    priority: todo.priority,
-    dueDate: todo.dueDate ? parseStableDate(todo.dueDate) : null,
-    todoColumnId: todo.todoColumnId ?? "",
-    checked: todo.completed,
-    order: todo.order,
-    shoppingListId: todo.todoColumnId || "",
-    notes: todo.description,
-    recurringGroupId: todo.recurringGroupId,
-    rrule: (todo.rrule as ICalEvent["rrule"] | null) ?? undefined,
-  };
+function openTodoDetail(item: BaseListItem) {
+  const todo = toTodoListItem(item);
+  if (!todo)
+    return;
+  viewingTodo.value = todo;
+  todoDetailDialog.value = true;
+}
+
+function handleTodoDetailEdit(todo: TodoListItem) {
+  todoDetailDialog.value = false;
+  viewingTodo.value = null;
+  editingTodo.value = todo;
   todoItemDialog.value = true;
 }
 
@@ -615,9 +665,31 @@ async function handleToggleTodo(itemId: string, completed: boolean) {
     >
       <GlobalDateHeader
         show-todo-sort-selector
+        show-todo-filter-selector
         :todo-sort-by="todoSortBy"
+        :todo-due-range="todoDueRange"
         @todo-sort-change="(mode) => updatePreferences({ todoSortBy: mode })"
+        @todo-due-range-change="(range) => updatePreferences({ todoDueRange: range })"
       />
+      <div
+        v-if="todoFilterSummary.hidden > 0"
+        role="status"
+        class="flex items-center gap-2 mt-2 text-sm text-muted"
+      >
+        <UIcon name="i-lucide-filter" class="h-4 w-4" />
+        <span>
+          Showing {{ todoFilterSummary.visible }} of {{ todoFilterSummary.total }} todos
+        </span>
+        <UButton
+          variant="link"
+          color="primary"
+          size="xs"
+          class="p-0"
+          @click="updatePreferences({ todoDueRange: 'all' })"
+        >
+          Clear filter
+        </UButton>
+      </div>
     </div>
 
     <div class="flex flex-1 flex-col min-h-0 p-4">
@@ -635,6 +707,7 @@ async function handleToggleTodo(itemId: string, completed: boolean) {
         show-completed
         show-progress
         show-integration-icons
+        show-detail
         @create="
           todoColumnDialog = true;
           editingColumn = null;
@@ -642,6 +715,7 @@ async function handleToggleTodo(itemId: string, completed: boolean) {
         @edit="openEditColumn($event as TodoListWithIntegration)"
         @add-item="openCreateTodo($event)"
         @edit-item="openEditTodo($event)"
+        @view-item="openTodoDetail($event)"
         @toggle-item="handleToggleTodo"
         @reorder-list="
           (listId, direction) =>
@@ -676,6 +750,16 @@ async function handleToggleTodo(itemId: string, completed: boolean) {
       "
       @save="handleTodoSave"
       @delete="handleTodoDelete"
+    />
+
+    <TodoDetailDialog
+      :is-open="todoDetailDialog"
+      :todo="viewingTodo"
+      @close="
+        todoDetailDialog = false;
+        viewingTodo = null;
+      "
+      @edit="handleTodoDetailEdit"
     />
 
     <TodoColumnDialog

@@ -18,6 +18,7 @@ const props = defineProps<{
   showEditItem?: boolean | ((list: AnyListWithIntegration) => boolean);
   showCompleted?: boolean | ((list: AnyListWithIntegration) => boolean);
   showIntegrationIcons?: boolean;
+  showDetail?: boolean;
   itemSortMode?: "manual" | "auto";
 }>();
 
@@ -26,6 +27,7 @@ const _emit = defineEmits<{
   (e: "edit", list: AnyListWithIntegration): void;
   (e: "addItem", listId: string): void;
   (e: "editItem", item: BaseListItem): void;
+  (e: "viewItem", item: BaseListItem): void;
   (e: "toggleItem", itemId: string, checked: boolean): void;
   (e: "reorderItem", itemId: string, direction: "up" | "down"): void;
   (e: "reorderList", listId: string, direction: "up" | "down"): void;
@@ -283,6 +285,9 @@ function hasIntegrationProperties(
                           ).length
                         }}
                         of {{ list.items.length }} items
+                        <template v-if="list.hiddenItemCount">
+                          &middot; {{ list.hiddenItemCount }} hidden
+                        </template>
                       </span>
                       <span class="text-muted font-medium">
                         {{ getProgressPercentage(list) }}%
@@ -327,15 +332,25 @@ function hasIntegrationProperties(
                     class="flex flex-col items-center justify-center py-12 text-muted"
                   >
                     <UIcon
-                      name="i-lucide-list"
+                      :name="list.hiddenItemCount ? 'i-lucide-filter' : 'i-lucide-list'"
                       class="h-12 w-12 mb-3 opacity-30"
                     />
-                    <p class="text-sm font-medium mb-1">
-                      No items yet
-                    </p>
-                    <p class="text-xs mb-4">
-                      Add your first item to get started
-                    </p>
+                    <template v-if="list.hiddenItemCount">
+                      <p class="text-sm font-medium mb-1">
+                        No items match the current filter
+                      </p>
+                      <p class="text-xs mb-4">
+                        {{ list.hiddenItemCount }} hidden by the current filter
+                      </p>
+                    </template>
+                    <template v-else>
+                      <p class="text-sm font-medium mb-1">
+                        No items yet
+                      </p>
+                      <p class="text-xs mb-4">
+                        Add your first item to get started
+                      </p>
+                    </template>
                   </div>
                   <div v-else class="space-y-4">
                     <div v-if="list.activeItems.length > 0" class="space-y-2">
@@ -354,7 +369,9 @@ function hasIntegrationProperties(
                             : showReorder
                         "
                         :show-edit="showItemEdit"
+                        :show-detail="showDetail"
                         @edit="_emit('editItem', $event)"
+                        @view="_emit('viewItem', $event)"
                         @toggle="
                           (payload) =>
                             _emit('toggleItem', payload.itemId, payload.checked)
@@ -407,7 +424,9 @@ function hasIntegrationProperties(
                             : showReorder
                         "
                         :show-edit="showItemEdit"
+                        :show-detail="showDetail"
                         @edit="_emit('editItem', $event)"
+                        @view="_emit('viewItem', $event)"
                         @toggle="
                           (payload) =>
                             _emit('toggleItem', payload.itemId, payload.checked)
