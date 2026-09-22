@@ -24,7 +24,6 @@ export default defineConfig({
         "app/types/forms.ts",
         "app/types/recurrence.ts",
         "app/types/sync.ts",
-        "app/types/ui.ts",
         "app/integrations/**/types.ts",
         "server/integrations/**/types.ts",
         "server/integrations/**/index.ts",
