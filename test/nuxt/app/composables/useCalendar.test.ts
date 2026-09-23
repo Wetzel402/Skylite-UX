@@ -1,7 +1,30 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 import type { CalendarEvent } from "~/types/calendar";
-import { useCalendar } from "../../../../app/composables/useCalendar";
+import {
+  getBaseCalendarEventId,
+  useCalendar,
+} from "../../../../app/composables/useCalendar";
+
+describe("getBaseCalendarEventId", () => {
+  it("returns the id unchanged when there is no occurrence suffix", () => {
+    expect(getBaseCalendarEventId("clxyzabc123")).toBe("clxyzabc123");
+  });
+
+  it("returns hyphenated master ids unchanged", () => {
+    expect(getBaseCalendarEventId("event-1")).toBe("event-1");
+  });
+
+  it("strips the ICAL occurrence suffix from a cuid expanded id", () => {
+    expect(getBaseCalendarEventId("clxyzabc123-20250115T100000Z")).toBe(
+      "clxyzabc123",
+    );
+  });
+
+  it("strips the ICAL occurrence suffix from a hyphenated master expanded id", () => {
+    expect(getBaseCalendarEventId("event-1-20250115T100000Z")).toBe("event-1");
+  });
+});
 
 describe("useCalendar", () => {
   describe("timezone", () => {
