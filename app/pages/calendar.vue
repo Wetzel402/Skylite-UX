@@ -7,7 +7,10 @@ import type {
 import type { Integration } from "~/types/database";
 
 import { useAlertToast } from "~/composables/useAlertToast";
-import { useCalendar } from "~/composables/useCalendar";
+import {
+  getBaseCalendarEventId,
+  useCalendar,
+} from "~/composables/useCalendar";
 import { useCalendarEvents } from "~/composables/useCalendarEvents";
 import { useCalendarIntegrations } from "~/composables/useCalendarIntegrations";
 import { useIntegrations } from "~/composables/useIntegrations";
@@ -85,7 +88,11 @@ function separateLocalAndIntegrationCalendars(event: {
 
   return {
     localCalendar: localCalendar
-      ? { eventId: localCalendar.eventId || event.id }
+      ? {
+          eventId: getBaseCalendarEventId(
+            localCalendar.eventId || event.id,
+          ),
+        }
       : null,
     integrationTargets,
   };
@@ -512,7 +519,10 @@ async function handleEventUpdate(event: CalendarEvent) {
 
 async function handleEventDelete(eventId: string) {
   try {
-    const event = allEvents.value.find(e => e.id === eventId);
+    const baseEventId = getBaseCalendarEventId(eventId);
+    const event = allEvents.value.find(
+      e => e.id === eventId || getBaseCalendarEventId(e.id) === baseEventId,
+    );
 
     if (!event) {
       showError("Event Not Found", "The event could not be found.");

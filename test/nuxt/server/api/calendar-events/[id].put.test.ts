@@ -242,6 +242,35 @@ describe("pUT /api/calendar-events/[id]", () => {
         expect(response.title).toBe(requestBody.title);
       },
     );
+
+    it("updates using base id when given an expanded occurrence id", async () => {
+      const requestBody = createBaseUpdateBody();
+      const mockCurrentEvent = createBaseEvent({ id: "clxyzabc123" });
+      const mockResponse = {
+        ...mockCurrentEvent,
+        title: requestBody.title,
+        description: requestBody.description,
+        start: new Date(requestBody.start),
+        end: new Date(requestBody.end),
+        users: [],
+      };
+
+      prisma.calendarEvent.update.mockResolvedValue(mockResponse);
+
+      const event = createMockH3Event({
+        params: { id: "clxyzabc123-20250115T100000Z" },
+        body: requestBody,
+      });
+
+      const response = await handler(event);
+
+      expect(prisma.calendarEvent.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: "clxyzabc123" },
+        }),
+      );
+      expect(response).toHaveProperty("id", "clxyzabc123");
+    });
   });
 
   describe("error handling", () => {

@@ -21,6 +21,11 @@ import {
 } from "~/types/global";
 import { integrationRegistry } from "~/types/integrations";
 
+export function getBaseCalendarEventId(id: string) {
+  const match = id.match(/^(.+)-(\d{8}(?:T\d{6}Z?)?)$/);
+  return match?.[1] || id;
+}
+
 export function useCalendar() {
   const { data: nativeEvents }
     = useNuxtData<CalendarEvent[]>("calendar-events");
@@ -536,7 +541,7 @@ export function useCalendar() {
         calendarName: "Local Calendar",
         accessRole: "write",
         canEdit: true,
-        eventId: event.id,
+        eventId: getBaseCalendarEventId(event.id),
         eventColor: DEFAULT_LOCAL_EVENT_COLOR,
         userColor: userColors.length > 0 ? userColors : undefined,
       },

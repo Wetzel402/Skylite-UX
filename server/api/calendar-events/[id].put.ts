@@ -1,5 +1,10 @@
 import prisma from "~/lib/prisma";
 
+function getBaseCalendarEventId(id: string) {
+  const match = id.match(/^(.+)-(\d{8}(?:T\d{6}Z?)?)$/);
+  return match?.[1] || id;
+}
+
 export default defineEventHandler(async (event) => {
   try {
     const id = getRouterParam(event, "id");
@@ -13,11 +18,13 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    const actualId = getBaseCalendarEventId(id);
+
     const utcStart = new Date(start);
     const utcEnd = new Date(end);
 
     const calendarEvent = await prisma.calendarEvent.update({
-      where: { id },
+      where: { id: actualId },
       data: {
         title,
         description,
