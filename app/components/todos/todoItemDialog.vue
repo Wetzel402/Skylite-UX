@@ -440,7 +440,6 @@ function confirmDeleteAndStop() {
 
         <GlobalRecurrenceForm
           :state="recurrenceState"
-          @update:state="recurrenceState = $event"
         />
       </div>
 

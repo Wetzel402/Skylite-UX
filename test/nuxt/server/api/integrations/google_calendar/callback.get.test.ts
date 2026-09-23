@@ -12,7 +12,7 @@ vi.mock("@prisma/client", async () => {
   const actual = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
   return {
     ...actual,
-    PrismaClient: vi.fn(() => prisma),
+    PrismaClient: vi.fn(function () { return prisma; }),
   };
 });
 
@@ -111,7 +111,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
 
       prisma.integration.create.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.create>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "GET",
@@ -171,7 +171,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
         apiKey: "new-refresh-token",
       } as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "GET",
@@ -444,7 +444,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "GET",
@@ -471,7 +471,7 @@ describe("GET /api/integrations/google_calendar/callback", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "GET",

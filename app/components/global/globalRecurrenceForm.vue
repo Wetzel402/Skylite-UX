@@ -145,7 +145,7 @@ function toggleRecurrenceDay(day: number) {
           >(enabled)</span>
         </label>
       </div>
-      <UToggle
+      <USwitch
         :model-value="state.isRecurring.value"
         size="md"
         :disabled="disabled"
