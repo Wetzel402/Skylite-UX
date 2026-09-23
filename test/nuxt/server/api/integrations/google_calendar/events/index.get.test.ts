@@ -14,7 +14,7 @@ vi.mock("@prisma/client", async () => {
   const actual = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
   return {
     ...actual,
-    PrismaClient: vi.fn(() => prisma),
+    PrismaClient: vi.fn(function () { return prisma; }),
   };
 });
 
@@ -91,7 +91,7 @@ describe("gET /api/integrations/google_calendar/events", () => {
         fetchEvents: vi.fn().mockResolvedValue(mockEvents),
       };
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         query: { integrationId: "integration-1" },
@@ -206,7 +206,7 @@ describe("gET /api/integrations/google_calendar/events", () => {
         fetchEvents: vi.fn().mockRejectedValue(authError),
       };
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         query: { integrationId: "integration-1" },

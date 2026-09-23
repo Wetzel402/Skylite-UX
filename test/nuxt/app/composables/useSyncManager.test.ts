@@ -13,12 +13,12 @@ vi.mock("consola", () => ({
 
 const {
   mockUseState,
-  mockUseNuxtApp,
   syncDataRef,
   connectionStatusRef,
   lastHeartbeatRef,
   payloadData,
   mockReconnect,
+  nuxtAppOverrides,
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref } = require("vue");
@@ -27,6 +27,7 @@ const {
   const heartbeatRef = ref(null);
   const data: Record<string, unknown> = {};
   const reconnectFn = vi.fn();
+  const overrides: Record<string, unknown> = {};
 
   const useStateMock = vi.fn((key: string) => {
     if (key === "sync-data") return syncRef;
@@ -35,24 +36,40 @@ const {
     return ref(null);
   });
 
-  const useNuxtAppMock = vi.fn(() => ({
-    payload: { data },
-    $reconnectSync: reconnectFn,
-  }));
-
   return {
     mockUseState: useStateMock,
-    mockUseNuxtApp: useNuxtAppMock,
     syncDataRef: syncRef,
     connectionStatusRef: connRef,
     lastHeartbeatRef: heartbeatRef,
     payloadData: data,
     mockReconnect: reconnectFn,
+    nuxtAppOverrides: overrides,
   };
 });
 
 mockNuxtImport("useState", () => mockUseState);
-mockNuxtImport("useNuxtApp", () => mockUseNuxtApp);
+mockNuxtImport("useNuxtApp", original => () => {
+  const app = original();
+  return new Proxy(app, {
+    get(target, prop, receiver) {
+      if (prop === "$reconnectSync") {
+        return Object.prototype.hasOwnProperty.call(nuxtAppOverrides, "$reconnectSync")
+          ? nuxtAppOverrides.$reconnectSync
+          : mockReconnect;
+      }
+      if (prop === "payload") {
+        return new Proxy(target.payload, {
+          get(payloadTarget, payloadProp, payloadReceiver) {
+            if (payloadProp === "data")
+              return payloadData;
+            return Reflect.get(payloadTarget, payloadProp, payloadReceiver);
+          },
+        });
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+});
 
 import { useSyncManager } from "../../../../app/composables/useSyncManager";
 
@@ -79,6 +96,7 @@ describe("useSyncManager", () => {
     connectionStatusRef.value = "disconnected";
     lastHeartbeatRef.value = null;
     Object.keys(payloadData).forEach(k => delete payloadData[k]);
+    Object.keys(nuxtAppOverrides).forEach(k => delete nuxtAppOverrides[k]);
   });
 
   it("should return getSyncData for integration id", () => {
@@ -165,16 +183,14 @@ describe("useSyncManager", () => {
   });
 
   it("should not throw or call reconnect when $reconnectSync is missing", () => {
-    // @ts-expect-error - intentionally missing $reconnectSync to test fallback
-    mockUseNuxtApp.mockReturnValueOnce({ payload: { data: {} } });
+    nuxtAppOverrides.$reconnectSync = undefined;
     const { reconnect } = useSyncManager();
     expect(() => reconnect()).not.toThrow();
     expect(mockReconnect).not.toHaveBeenCalled();
   });
 
   it("should not throw or call reconnect when $reconnectSync is not a function", () => {
-    // @ts-expect-error - intentionally invalid type to test runtime check
-    mockUseNuxtApp.mockReturnValueOnce({ payload: { data: {} }, $reconnectSync: "not-a-function" });
+    nuxtAppOverrides.$reconnectSync = "not-a-function";
     const { reconnect } = useSyncManager();
     expect(() => reconnect()).not.toThrow();
     expect(mockReconnect).not.toHaveBeenCalled();
