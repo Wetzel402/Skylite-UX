@@ -243,15 +243,15 @@ describe("pUT /api/calendar-events/[id]", () => {
       },
     );
 
-    it("updates using base id when given an expanded occurrence id", async () => {
+    it("does not overwrite master dates when given an expanded occurrence id", async () => {
       const requestBody = createBaseUpdateBody();
       const mockCurrentEvent = createBaseEvent({ id: "clxyzabc123" });
       const mockResponse = {
         ...mockCurrentEvent,
         title: requestBody.title,
         description: requestBody.description,
-        start: new Date(requestBody.start),
-        end: new Date(requestBody.end),
+        start: mockCurrentEvent.start,
+        end: mockCurrentEvent.end,
         users: [],
       };
 
@@ -267,9 +267,15 @@ describe("pUT /api/calendar-events/[id]", () => {
       expect(prisma.calendarEvent.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: "clxyzabc123" },
+          data: expect.objectContaining({
+            start: undefined,
+            end: undefined,
+          }),
         }),
       );
       expect(response).toHaveProperty("id", "clxyzabc123");
+      expect(response.start).toEqual(mockCurrentEvent.start);
+      expect(response.end).toEqual(mockCurrentEvent.end);
     });
   });
 

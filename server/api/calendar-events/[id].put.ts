@@ -19,9 +19,9 @@ export default defineEventHandler(async (event) => {
     }
 
     const actualId = getBaseCalendarEventId(id);
-
-    const utcStart = new Date(start);
-    const utcEnd = new Date(end);
+    const shouldUpdateMasterDates = id === actualId;
+    const utcStart = shouldUpdateMasterDates ? new Date(start) : undefined;
+    const utcEnd = shouldUpdateMasterDates ? new Date(end) : undefined;
 
     const calendarEvent = await prisma.calendarEvent.update({
       where: { id: actualId },

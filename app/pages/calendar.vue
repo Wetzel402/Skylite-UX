@@ -520,9 +520,8 @@ async function handleEventUpdate(event: CalendarEvent) {
 async function handleEventDelete(eventId: string) {
   try {
     const baseEventId = getBaseCalendarEventId(eventId);
-    const event = allEvents.value.find(
-      e => e.id === eventId || getBaseCalendarEventId(e.id) === baseEventId,
-    );
+    const event = allEvents.value.find(e => e.id === eventId)
+      || allEvents.value.find(e => getBaseCalendarEventId(e.id) === baseEventId);
 
     if (!event) {
       showError("Event Not Found", "The event could not be found.");
