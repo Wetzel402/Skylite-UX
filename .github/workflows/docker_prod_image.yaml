@@ -1,4 +1,4 @@
-name: Docker prod image
+name: Release images
 
 on:
   release:
@@ -10,7 +10,7 @@ on:
         required: true
 
 jobs:
-  push_to_registry:
+  build_docker:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     permissions:
@@ -30,11 +30,21 @@ jobs:
             exit 0
           fi
           VERSION="${TAG#v}"
-          FILE_VERSION=$(node -p "require('./package.json').version")
-          if [[ "${VERSION}" != "${FILE_VERSION}" ]]; then
-            echo "Tag ${TAG} (normalized: ${VERSION}) does not match package.json version ${FILE_VERSION}" >&2
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[0-9]+(b[0-9]+)?$ ]]; then
+            echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
             exit 1
           fi
+          node -e '
+            const fs = require("node:fs");
+            const version = process.argv[1];
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.version = version;
+            fs.writeFileSync("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
+            const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+            lock.version = version;
+            lock.packages[""].version = version;
+            fs.writeFileSync("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
+          ' "${VERSION}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -116,7 +126,7 @@ jobs:
             exit 0
           fi
           VERSION="${TAG#v}"
-          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(b[0-9]+)?$ ]]; then
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[0-9]+(b[0-9]+)?$ ]]; then
             echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
             exit 1
           fi
@@ -229,7 +239,7 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           VERSION="${TAG#v}"
-          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(b[0-9]+)?$ ]]; then
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[0-9]+(b[0-9]+)?$ ]]; then
             echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
             exit 1
           fi
