@@ -23,12 +23,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set version from tag
+        env:
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag || 'dev' }}
         run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
-          else
-            TAG="${{ github.event.inputs.tag || 'dev' }}"
-          fi
           if [[ "${TAG}" == "dev" ]]; then
             exit 0
           fi
@@ -76,19 +73,15 @@ jobs:
 
       - name: Prepare tags
         id: tags
+        env:
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag || 'dev' }}
+          PRERELEASE: ${{ github.event_name == 'release' && github.event.release.prerelease || false }}
         run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
-            PRERELEASE="${{ github.event.release.prerelease }}"
-          else
-            TAG="${{ github.event.inputs.tag || 'dev' }}"
-            PRERELEASE="false"
-          fi
           TAGS="${{ secrets.DOCKER_NAMESPACE }}/${{ secrets.DOCKER_REPOSITORY }}:${TAG}"
           if [[ "${PRERELEASE}" == "true" ]] || [[ "${TAG}" == *"b"* ]]; then
             TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/${{ secrets.DOCKER_REPOSITORY }}:beta"
           fi
-          if [[ "${PRERELEASE}" != "true" ]] && [[ "${TAG}" != *"b"* ]]; then
+          if [[ "${PRERELEASE}" != "true" ]] && [[ "${TAG}" != *"b"* ]] && [[ "${TAG}" != "dev" ]]; then
             TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/${{ secrets.DOCKER_REPOSITORY }}:latest"
           fi
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
@@ -126,12 +119,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set version from tag
+        env:
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag || 'dev' }}
         run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
-          else
-            TAG="${{ github.event.inputs.tag || 'dev' }}"
-          fi
           if [[ "${TAG}" == "dev" ]]; then
             exit 0
           fi
@@ -179,22 +169,21 @@ jobs:
 
       - name: Prepare tags
         id: tags
+        env:
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag || 'dev' }}
+          PRERELEASE: ${{ github.event_name == 'release' && github.event.release.prerelease || false }}
         run: |
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            TAG="${{ github.event.release.tag_name }}"
-            PRERELEASE="${{ github.event.release.prerelease }}"
-          else
-            TAG="${{ github.event.inputs.tag || 'dev' }}"
-            PRERELEASE="false"
-          fi
+          VERSION="${TAG#v}"
           TAGS="${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:${TAG}"
+          if [[ "${VERSION}" != "${TAG}" ]]; then
+            TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:${VERSION}"
+          fi
           if [[ "${PRERELEASE}" == "true" ]] || [[ "${TAG}" == *"b"* ]]; then
             TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:beta"
           fi
-          if [[ "${PRERELEASE}" != "true" ]] && [[ "${TAG}" != *"b"* ]]; then
+          if [[ "${PRERELEASE}" != "true" ]] && [[ "${TAG}" != *"b"* ]] && [[ "${TAG}" != "dev" ]]; then
             TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:latest"
           fi
-          VERSION="${TAG#v}"
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
@@ -246,10 +235,30 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Write version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          TAG="${{ github.event.release.tag_name }}"
           VERSION="${TAG#v}"
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(b[0-9]+)?$ ]]; then
+            echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
+            exit 1
+          fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          sort_key() {
+            if [[ "$1" =~ ^(.+)b([0-9]+)$ ]]; then
+              echo "${BASH_REMATCH[1]}.0.${BASH_REMATCH[2]}"
+            else
+              echo "$1.1.0"
+            fi
+          }
+          CURRENT=$(node -p 'require("./package.json").version')
+          if [[ "${CURRENT}" != "${VERSION}" ]]; then
+            NEWEST=$(printf '%s\n%s\n' "$(sort_key "${CURRENT}")" "$(sort_key "${VERSION}")" | sort -V | tail -n 1)
+            if [[ "${NEWEST}" == "$(sort_key "${CURRENT}")" ]]; then
+              echo "::notice::Skipping ${{ matrix.branch }}: already at ${CURRENT}, newer than ${VERSION}"
+              exit 0
+            fi
+          fi
           node -e '
             const fs = require("node:fs");
             const version = process.argv[1];
@@ -262,6 +271,10 @@ jobs:
             fs.writeFileSync("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
           ' "${VERSION}"
           sed -i -E "s/^version:.*/version: ${VERSION}/" ha-app/config.yaml
+          if ! grep -qxF "version: ${VERSION}" ha-app/config.yaml; then
+            echo "ha-app/config.yaml is missing a top-level 'version: ${VERSION}' line" >&2
+            exit 1
+          fi
 
       - name: Commit version bump
         id: commit
