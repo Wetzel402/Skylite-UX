@@ -1,4 +1,4 @@
-name: Release images
+name: Docker prod image
 
 on:
   release:
@@ -10,7 +10,7 @@ on:
         required: true
 
 jobs:
-  build_docker:
+  push_to_registry:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     permissions:
@@ -30,28 +30,18 @@ jobs:
             exit 0
           fi
           VERSION="${TAG#v}"
-          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(b[0-9]+)?$ ]]; then
-            echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
+          FILE_VERSION=$(node -p "require('./package.json').version")
+          if [[ "${VERSION}" != "${FILE_VERSION}" ]]; then
+            echo "Tag ${TAG} (normalized: ${VERSION}) does not match package.json version ${FILE_VERSION}" >&2
             exit 1
           fi
-          node -e '
-            const fs = require("node:fs");
-            const version = process.argv[1];
-            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
-            pkg.version = version;
-            fs.writeFileSync("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
-            const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
-            lock.version = version;
-            lock.packages[""].version = version;
-            fs.writeFileSync("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
-          ' "${VERSION}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
+      
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
