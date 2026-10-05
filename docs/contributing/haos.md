@@ -20,12 +20,6 @@ The HA app lives in the `ha-app/` folder and the repo root:
 - **ha-app/README.md** – Copy of the root README; shown in the Home Assistant app store. Kept in sync via `npm run copy-readme`. Do not edit directly.
 - **repository.yaml** (repo root) – Defines this repo as a Home Assistant app repository. For repository format, see [Create an app repository](https://developers.home-assistant.io/docs/add-ons/repository/).
 
-## Releases and versioning
-
-Home Assistant Supervisor reads `ha-app/config.yaml` from the repository's default branch (`dev`). Any change to its `version:` field triggers an update notification for every user, even if no image with that tag exists yet.
-
-The `version:` field is updated only by the `Release images` workflow, after both the Docker and HA app images for a published release have been pushed. Do not edit it by hand. See [Versioning]({{ '/contributing/code/' | relative_url }}#versioning) for the release process.
-
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)
