@@ -1,4 +1,4 @@
-name: Docker prod image
+name: Release images
 
 on:
   release:
@@ -10,7 +10,7 @@ on:
         required: true
 
 jobs:
-  push_to_registry:
+  build_docker:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     permissions:
@@ -22,7 +22,7 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v5
 
-      - name: Check tag matches package.json version
+      - name: Set version from tag
         run: |
           if [[ "${{ github.event_name }}" == "release" ]]; then
             TAG="${{ github.event.release.tag_name }}"
@@ -33,18 +33,28 @@ jobs:
             exit 0
           fi
           VERSION="${TAG#v}"
-          FILE_VERSION=$(node -p "require('./package.json').version")
-          if [[ "${VERSION}" != "${FILE_VERSION}" ]]; then
-            echo "Tag ${TAG} (normalized: ${VERSION}) does not match package.json version ${FILE_VERSION}" >&2
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(b[0-9]+)?$ ]]; then
+            echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
             exit 1
           fi
+          node -e '
+            const fs = require("node:fs");
+            const version = process.argv[1];
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.version = version;
+            fs.writeFileSync("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
+            const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+            lock.version = version;
+            lock.packages[""].version = version;
+            fs.writeFileSync("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
+          ' "${VERSION}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -102,3 +112,180 @@ jobs:
           subject-name: index.docker.io/${{ secrets.DOCKER_NAMESPACE }}/${{ secrets.DOCKER_REPOSITORY }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
+
+  build_ha_app:
+    name: Push HA app image to Docker Hub
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+
+      - name: Set version from tag
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            TAG="${{ github.event.inputs.tag || 'dev' }}"
+          fi
+          if [[ "${TAG}" == "dev" ]]; then
+            exit 0
+          fi
+          VERSION="${TAG#v}"
+          if [[ ! "${VERSION}" =~ ^[0-9]{4}\.[0-9]{1,2}\.[0-9]+(b[0-9]+)?$ ]]; then
+            echo "Tag ${TAG} is not a valid YYYY.M.MICRO[bN] version" >&2
+            exit 1
+          fi
+          node -e '
+            const fs = require("node:fs");
+            const version = process.argv[1];
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.version = version;
+            fs.writeFileSync("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
+            const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+            lock.version = version;
+            lock.packages[""].version = version;
+            fs.writeFileSync("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
+          ' "${VERSION}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Log in to DHI.io
+        uses: docker/login-action@v3
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha
+
+      - name: Prepare tags
+        id: tags
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            TAG="${{ github.event.release.tag_name }}"
+            PRERELEASE="${{ github.event.release.prerelease }}"
+          else
+            TAG="${{ github.event.inputs.tag || 'dev' }}"
+            PRERELEASE="false"
+          fi
+          TAGS="${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:${TAG}"
+          if [[ "${PRERELEASE}" == "true" ]] || [[ "${TAG}" == *"b"* ]]; then
+            TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:beta"
+          fi
+          if [[ "${PRERELEASE}" != "true" ]] && [[ "${TAG}" != *"b"* ]]; then
+            TAGS="${TAGS},${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha:latest"
+          fi
+          VERSION="${TAG#v}"
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          file: ./ha-app/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_VERSION=${{ steps.tags.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: index.docker.io/${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  bump_version:
+    name: Commit version bump to ${{ matrix.branch }}
+    needs: [build_docker, build_ha_app]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [main, dev]
+    steps:
+      - name: Create app token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Check out branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.branch }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Write version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          node -e '
+            const fs = require("node:fs");
+            const version = process.argv[1];
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.version = version;
+            fs.writeFileSync("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
+            const lock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"));
+            lock.version = version;
+            lock.packages[""].version = version;
+            fs.writeFileSync("package-lock.json", `${JSON.stringify(lock, null, 2)}\n`);
+          ' "${VERSION}"
+          sed -i -E "s/^version:.*/version: ${VERSION}/" ha-app/config.yaml
+
+      - name: Commit version bump
+        id: commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          USER_ID=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git commit -am "chore(release): ${VERSION} [skip ci]"
+          echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Push version bump
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          for i in 1 2 3; do
+            git push origin "${BRANCH}" && exit 0
+            git pull --rebase origin "${BRANCH}"
+          done
+          exit 1
