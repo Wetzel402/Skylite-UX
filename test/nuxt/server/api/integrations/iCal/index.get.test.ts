@@ -13,7 +13,7 @@ vi.mock("@prisma/client", async () => {
   const actual = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
   return {
     ...actual,
-    PrismaClient: vi.fn(() => prisma),
+    PrismaClient: vi.fn(function () { return prisma; }),
   };
 });
 
@@ -72,9 +72,11 @@ describe("gET /api/integrations/iCal", () => {
       ];
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
-      vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockResolvedValue(mockEvents),
-      }) as unknown as ICalServerService);
+      vi.mocked(ICalServerService).mockImplementation(function () {
+        return {
+          fetchEventsFromUrl: vi.fn().mockResolvedValue(mockEvents),
+        } as unknown as ICalServerService;
+      });
 
       const event = createMockH3Event({
         method: "GET",
@@ -109,9 +111,11 @@ describe("gET /api/integrations/iCal", () => {
         },
       ];
 
-      vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockResolvedValue(mockEvents),
-      }) as unknown as ICalServerService);
+      vi.mocked(ICalServerService).mockImplementation(function () {
+        return {
+          fetchEventsFromUrl: vi.fn().mockResolvedValue(mockEvents),
+        } as unknown as ICalServerService;
+      });
 
       const event = createMockH3Event({
         method: "GET",
@@ -191,9 +195,11 @@ describe("gET /api/integrations/iCal", () => {
       const mockIntegration = createBaseIntegration();
 
       prisma.integration.findFirst.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findFirst>>);
-      vi.mocked(ICalServerService).mockImplementation(() => ({
-        fetchEventsFromUrl: vi.fn().mockRejectedValue(new Error("Failed to fetch calendar")),
-      }) as unknown as ICalServerService);
+      vi.mocked(ICalServerService).mockImplementation(function () {
+        return {
+          fetchEventsFromUrl: vi.fn().mockRejectedValue(new Error("Failed to fetch calendar")),
+        } as unknown as ICalServerService;
+      });
 
       const event = createMockH3Event({
         method: "GET",

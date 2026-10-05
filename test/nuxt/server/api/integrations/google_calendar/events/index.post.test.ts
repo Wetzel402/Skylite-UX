@@ -15,7 +15,7 @@ vi.mock("@prisma/client", async () => {
   const actual = await vi.importActual<typeof import("@prisma/client")>("@prisma/client");
   return {
     ...actual,
-    PrismaClient: vi.fn(() => prisma),
+    PrismaClient: vi.fn(function () { return prisma; }),
   };
 });
 
@@ -104,7 +104,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -156,7 +156,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -201,7 +201,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -246,7 +246,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -298,7 +298,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -342,7 +342,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -406,7 +406,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -461,7 +461,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -517,7 +517,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -574,7 +574,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -631,7 +631,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -688,7 +688,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -745,7 +745,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -802,7 +802,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -860,7 +860,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(parseRRuleString).mockReturnValue(mockRrule);
 
       const event = createMockH3Event({
@@ -914,7 +914,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -1002,7 +1002,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -1068,7 +1068,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -1110,7 +1110,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -1235,7 +1235,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(isGoogleApiError).mockReturnValue(true);
 
       const event = createMockH3Event({
@@ -1277,7 +1277,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(isGoogleApiError).mockReturnValue(true);
 
       const event = createMockH3Event({
@@ -1319,7 +1319,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(isGoogleApiError).mockReturnValue(true);
 
       const event = createMockH3Event({
@@ -1351,7 +1351,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(isGoogleApiError).mockReturnValue(true);
 
       const event = createMockH3Event({
@@ -1383,7 +1383,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(isGoogleApiError).mockReturnValue(true);
 
       const event = createMockH3Event({
@@ -1486,7 +1486,7 @@ describe("POST /api/integrations/google_calendar/events", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation(() => mockService as never);
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function () { return mockService as never; });
       vi.mocked(isGoogleApiError).mockReturnValue(false);
 
       const event = createMockH3Event({

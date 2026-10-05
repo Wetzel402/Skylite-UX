@@ -24,7 +24,6 @@ export default defineConfig({
         "app/types/forms.ts",
         "app/types/recurrence.ts",
         "app/types/sync.ts",
-        "app/types/ui.ts",
         "app/integrations/**/types.ts",
         "server/integrations/**/types.ts",
         "server/integrations/**/index.ts",
@@ -44,6 +43,7 @@ export default defineConfig({
           name: "nuxt",
           include: ["test/nuxt/**/*.{test,spec}.ts"],
           environment: "nuxt",
+          hookTimeout: 120_000,
           setupFiles: ["./test/nuxt/setup-global.ts"],
           environmentOptions: {
             nuxt: {

@@ -1,5 +1,8 @@
+import { endOfDay, endOfMonth, endOfWeek } from "date-fns";
+import ical from "ical.js";
+
 import type { CalendarView } from "~/types/calendar";
-import type { ShoppingList, TodoList } from "~/types/database";
+import type { Priority, ShoppingList, TodoList } from "~/types/database";
 
 export type ConnectionTestResult = {
   success: boolean;
@@ -13,6 +16,7 @@ export type ShoppingListWithIntegration = ShoppingList & {
   integrationId?: string;
   integrationName?: string;
   integrationIcon?: string | null;
+  hiddenItemCount?: number;
 };
 
 export type TodoListWithIntegration = TodoList & {
@@ -20,6 +24,7 @@ export type TodoListWithIntegration = TodoList & {
   integrationId?: string;
   integrationName?: string;
   integrationIcon?: string | null;
+  hiddenItemCount?: number;
 };
 
 export type AnyListWithIntegration
@@ -113,11 +118,12 @@ export type FontPreference = (typeof FONT_PREFERENCES)[number]["value"];
 
 export type TodoSortMode = "date" | "priority" | "alpha";
 
+export type TodoDueRange = "all" | "day" | "week" | "month";
+
 export type ClientPreferences = {
   colorMode?: "light" | "dark" | "system";
   notifications?: boolean;
   font?: FontPreference;
-  todoSortBy?: TodoSortMode;
   defaultView?: string;
   calendarView?: CalendarView;
 };
@@ -133,7 +139,6 @@ export const defaultClientPreferences: ClientPreferences = {
   colorMode: "system",
   notifications: false,
   font: "system",
-  todoSortBy: "date",
   defaultView: "/calendar",
   calendarView: "week",
 };
@@ -143,6 +148,82 @@ export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [
   { value: "priority", label: "Priority" },
   { value: "alpha", label: "A-Z" },
 ];
+
+export const TODO_DUE_RANGE_OPTIONS: { value: TodoDueRange; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "day", label: "Today" },
+  { value: "week", label: "This week" },
+  { value: "month", label: "This month" },
+];
+
+export function getDueRangeCutoff(
+  range: TodoDueRange,
+  now: Date,
+  timezone: string,
+): Date | null {
+  if (range === "all")
+    return null;
+
+  const zone = ical.TimezoneService.get(timezone) ?? ical.TimezoneService.get("UTC")!;
+
+  const nowInZone = ical.Time.fromJSDate(now, true).convertToZone(zone);
+  const wallClockNow = new Date(
+    nowInZone.year,
+    nowInZone.month - 1,
+    nowInZone.day,
+    nowInZone.hour,
+    nowInZone.minute,
+    nowInZone.second,
+  );
+
+  let wallClockCutoff: Date;
+  if (range === "day")
+    wallClockCutoff = endOfDay(wallClockNow);
+  else if (range === "week")
+    wallClockCutoff = endOfWeek(wallClockNow, { weekStartsOn: 0 });
+  else
+    wallClockCutoff = endOfMonth(wallClockNow);
+
+  const cutoffInstant = ical.Time.fromData(
+    {
+      year: wallClockCutoff.getFullYear(),
+      month: wallClockCutoff.getMonth() + 1,
+      day: wallClockCutoff.getDate(),
+      hour: wallClockCutoff.getHours(),
+      minute: wallClockCutoff.getMinutes(),
+      second: wallClockCutoff.getSeconds(),
+    },
+    zone,
+  ).toJSDate();
+
+  cutoffInstant.setMilliseconds(wallClockCutoff.getMilliseconds());
+  return cutoffInstant;
+}
+
+export function isTodoWithinDueRange(
+  dueDate: Date | null,
+  completed: boolean,
+  cutoff: Date | null,
+): boolean {
+  if (!cutoff)
+    return true;
+  if (completed)
+    return true;
+  if (!dueDate)
+    return true;
+  return dueDate <= cutoff;
+}
+
+export const PRIORITY_COLORS: Record<Priority, string> = {
+  LOW: "text-green-600 bg-green-50 dark:bg-green-950",
+  MEDIUM: "text-yellow-600 bg-yellow-50 dark:bg-yellow-950",
+  HIGH: "text-orange-600 bg-orange-50 dark:bg-orange-950",
+  URGENT: "text-red-600 bg-red-50 dark:bg-red-950",
+};
+
+export function getPriorityColor(priority: Priority): string {
+  return PRIORITY_COLORS[priority] ?? "text-muted bg-muted";
+}
 
 export const FONT_STACKS: Record<FontPreference, string> = Object.fromEntries(
   FONT_PREFERENCES.map(f => [f.value, f.stack]),

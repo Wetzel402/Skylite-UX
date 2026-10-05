@@ -142,7 +142,7 @@ function handleEventClick(event: CalendarEvent, e: MouseEvent) {
                   <span class="max-sm:sr-only">more</span>
                 </span>
               </UButton>
-              <template #panel>
+              <template #content>
                 <div
                   class="w-52 p-3 bg-default rounded-lg shadow-lg border border-default"
                 >

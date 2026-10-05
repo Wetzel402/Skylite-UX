@@ -44,6 +44,12 @@ describe("dELETE /api/calendar-events/[id]", () => {
         mockEvent: createBaseEvent(),
         expectExpanded: true,
       },
+      {
+        name: "recurring event series (cuid expanded ID)",
+        params: { id: "clxyzabc123-20250115T100000Z" },
+        mockEvent: createBaseEvent({ id: "clxyzabc123" }),
+        expectExpanded: true,
+      },
     ])("$name", async ({ params, mockEvent, expectExpanded }) => {
       prisma.calendarEvent.findUnique.mockResolvedValue(mockEvent);
       prisma.calendarEvent.delete.mockResolvedValue(mockEvent);
@@ -54,7 +60,9 @@ describe("dELETE /api/calendar-events/[id]", () => {
 
       const response = await handler(event);
 
-      const actualId = expectExpanded ? params.id.split("-")[0] : params.id;
+      const actualId = expectExpanded
+        ? params.id.replace(/-\d{8}(?:T\d{6}Z?)?$/, "")
+        : params.id;
 
       expect(prisma.calendarEvent.findUnique).toHaveBeenCalledWith({
         where: { id: actualId },

@@ -399,7 +399,7 @@ Press `Ctrl+C` in the terminal where the server is running to stop it.
 
 ## Versioning
 
-The project uses calendar versioning per [CalVer](https://calver.org). Format: `YYYY.M.MICRO` – **YYYY** is the 4-digit year, **M** is the month (1–12, no leading zero), **MICRO** is the revision within that month (0, 1, 2, …). Source of truth is `package.json`; the same version is synced to `ha-app/config.yaml` for the HA app image.
+The project uses calendar versioning per [CalVer](https://calver.org). Format: `YYYY.M.MICRO` – **YYYY** is the 4-digit year, **M** is the month (1–12, no leading zero), **MICRO** is the revision within that month (0, 1, 2, …). Source of truth is `package.json`; the same version is synced to `package-lock.json` and `ha-app/config.yaml` for the HA app image.
 
 ### Bump rules
 
@@ -409,7 +409,7 @@ The project uses calendar versioning per [CalVer](https://calver.org). Format: `
 
 ### Bump command
 
-Run `npm run version` to bump the version. The script reads `package.json`, computes the next version, and writes it to both `package.json` and `ha-app/config.yaml`. Workflow: run before a release, commit the bumped files, then create the release tag. For HA app version sync details, see [Contributing: Home Assistant app]({{ '/contributing/haos/' | relative_url }}).
+Run `npm run version` to bump the version. The script reads `package.json`, computes the next version, and writes it to `package.json`, `package-lock.json`, and `ha-app/config.yaml`. Workflow: run before a release, commit the bumped files, then create the release tag. For HA app version sync details, see [Contributing: Home Assistant app]({{ '/contributing/haos/' | relative_url }}).
 
 ## Building
 
@@ -441,7 +441,7 @@ Release builds utilize the [CalVer](https://calver.org) YYYY.MM.Micro standard.
 # Login to Docker Hub (required for base image authentication)
 docker login
 
-# Build Docker image (uses dhi.io/node:20, same as production)
+# Build Docker image (uses dhi.io/node:26, same as production)
 docker build -t skylite-ux .
 
 # Create a network

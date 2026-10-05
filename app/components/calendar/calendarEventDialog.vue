@@ -1960,7 +1960,6 @@ function handleDelete() {
         <GlobalRecurrenceForm
           :state="recurrenceState"
           :disabled="isReadOnly"
-          @update:state="recurrenceState = $event"
         />
         <div class="space-y-2">
           <label class="block text-sm font-medium text-highlighted">Location</label>

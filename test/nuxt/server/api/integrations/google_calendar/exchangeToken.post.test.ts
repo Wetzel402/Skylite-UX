@@ -48,7 +48,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -78,7 +78,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -158,7 +158,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -179,7 +179,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "POST",
@@ -204,7 +204,7 @@ describe("POST /api/integrations/google_calendar/exchangeToken", () => {
         getToken: mockGetToken,
       };
 
-      vi.mocked(google.auth.OAuth2).mockImplementation(() => mockOAuth2 as never);
+      vi.mocked(google.auth.OAuth2).mockImplementation(function () { return mockOAuth2 as never; });
 
       const event = createMockH3Event({
         method: "POST",
