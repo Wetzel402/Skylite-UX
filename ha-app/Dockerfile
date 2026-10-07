@@ -31,16 +31,15 @@ COPY prisma ./prisma/
 COPY package-lock.json ./package-lock.json
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LANGUAGE=C.UTF-8
+ENV LC_ALL=C.UTF-8
 RUN printf 'Package: postgresql* libpq*\nPin: origin "deb.debian.org"\nPin-Priority: 1001\n' > /etc/apt/preferences.d/postgresql && \
-    apt-get update -y && apt-get install -y --no-install-recommends openssl jq postgresql gosu && \
+    apt-get update -y && apt-get install -y --no-install-recommends hostname openssl jq postgresql gosu && \
     PRISMA_VERSION=$(node -p "require('./package-lock.json').packages['node_modules/prisma'].version") && \
     npm install -g prisma@${PRISMA_VERSION} && \
     rm package-lock.json && \
     rm -rf /var/lib/apt/lists/*
-
-ENV LANG=C.UTF-8
-ENV LANGUAGE=C.UTF-8
-ENV LC_ALL=C.UTF-8
 
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
