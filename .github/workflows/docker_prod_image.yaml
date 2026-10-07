@@ -8,11 +8,21 @@ on:
       tag:
         description: "Tag/version for the image (e.g. 2026.2.2 or dev)"
         required: true
+      target:
+        description: "Build which images"
+        type: choice
+        options: [all, docker, ha_app]
+        default: all
+      bump_version:
+        description: "Commit the version bump to main/dev after building"
+        type: boolean
+        default: false
 
 jobs:
   build_docker:
     name: Push Docker image to Docker Hub
-    runs-on: ubuntu-latest
+    if: inputs.target != 'ha_app'
+    runs-on: ubuntu-24.04
     permissions:
       packages: write
       contents: read
@@ -47,19 +57,19 @@ jobs:
           ' "${VERSION}"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Log in to DHI.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: dhi.io
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -67,7 +77,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
         with:
           images: ${{ secrets.DOCKER_NAMESPACE }}/${{ secrets.DOCKER_REPOSITORY }}
 
@@ -88,7 +98,7 @@ jobs:
 
       - name: Build and push Docker image
         id: push
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: ./Dockerfile
@@ -108,7 +118,8 @@ jobs:
 
   build_ha_app:
     name: Push HA app image to Docker Hub
-    runs-on: ubuntu-latest
+    if: inputs.target != 'docker'
+    runs-on: ubuntu-24.04
     permissions:
       packages: write
       contents: read
@@ -143,19 +154,19 @@ jobs:
           ' "${VERSION}"
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Log in to DHI.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: dhi.io
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -163,7 +174,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
         with:
           images: ${{ secrets.DOCKER_NAMESPACE }}/skylite-ux-ha
 
@@ -189,7 +200,7 @@ jobs:
 
       - name: Build and push Docker image
         id: push
-        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
         with:
           context: .
           file: ./ha-app/Dockerfile
@@ -212,8 +223,8 @@ jobs:
   bump_version:
     name: Commit version bump to ${{ matrix.branch }}
     needs: [build_docker, build_ha_app]
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && (github.event_name == 'release' || inputs.bump_version) }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     strategy:
@@ -236,7 +247,7 @@ jobs:
 
       - name: Write version
         env:
-          TAG: ${{ github.event.release.tag_name }}
+          TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.tag }}
         run: |
           VERSION="${TAG#v}"
           if [[ ! "${VERSION}" =~ ^[0-9]{4}\.([1-9]|1[0-2])\.[0-9]+(b[0-9]+)?$ ]]; then
