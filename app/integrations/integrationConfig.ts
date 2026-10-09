@@ -6,10 +6,7 @@ import type {
 } from "~/types/integrations";
 import type { DialogField } from "~/types/ui";
 
-import {
-  createGoogleCalendarService,
-  handleGoogleCalendarSave,
-} from "./google_calendar/googleCalendar";
+import { createGoogleCalendarService } from "./google_calendar/googleCalendar";
 import { createICalService } from "./iCal/iCalendar";
 import {
   createMealieService,
@@ -108,7 +105,6 @@ export const integrationConfigs: IntegrationConfig[] = [
     icon: "https://unpkg.com/lucide-static@latest/icons/calendar.svg",
     dialogFields: [],
     syncInterval: 10,
-    customSaveHandler: handleGoogleCalendarSave,
   },
   // ================================================
   // Meal integration configs can support the following list-level capabilities:

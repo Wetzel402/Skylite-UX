@@ -448,7 +448,7 @@ describe("GET /api/integrations/google_calendar/events/[eventId]", () => {
       prisma.integration.findUnique.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.findUnique>>);
       prisma.integration.update.mockResolvedValue(mockIntegration as Awaited<ReturnType<typeof prisma.integration.update>>);
 
-      vi.mocked(GoogleCalendarServerService).mockImplementation((clientId, clientSecret, refreshToken, accessToken, expiry, integrationId, onTokenRefresh) => {
+      vi.mocked(GoogleCalendarServerService).mockImplementation(function (clientId, clientSecret, refreshToken, accessToken, expiry, integrationId, onTokenRefresh) {
         if (onTokenRefresh) {
           setTimeout(() => {
             onTokenRefresh(integrationId || "", "new-access-token", Date.now() + 3600000);

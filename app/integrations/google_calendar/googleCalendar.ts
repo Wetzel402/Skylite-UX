@@ -1,7 +1,6 @@
 import consola from "consola";
 
 import type { CalendarEvent } from "~/types/calendar";
-import type { Integration } from "~/types/database";
 import type {
   CalendarConfig,
   CalendarIntegrationService,
@@ -14,8 +13,6 @@ import { integrationRegistry } from "~/types/integrations";
 
 import type { GoogleCalendarListItem } from "../../../server/integrations/google_calendar/types";
 
-import "./types";
-
 export class GoogleCalendarService implements CalendarIntegrationService {
   private integrationId: string;
   private clientId: string;
@@ -26,8 +23,6 @@ export class GoogleCalendarService implements CalendarIntegrationService {
     lastChecked: new Date(),
   };
 
-  private gisLoaded = false;
-
   constructor(integrationId: string, clientId: string, clientSecret: string) {
     this.integrationId = integrationId;
     this.clientId = clientId;
@@ -37,78 +32,7 @@ export class GoogleCalendarService implements CalendarIntegrationService {
   }
 
   async initialize(): Promise<void> {
-    await this.loadGoogleAPIs();
     await this.validate();
-  }
-
-  private async loadGoogleAPIs(): Promise<void> {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    if (!this.gisLoaded) {
-      await this.loadScript("https://accounts.google.com/gsi/client");
-      this.gisLoaded = true;
-    }
-  }
-
-  private loadScript(src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (typeof window === "undefined") {
-        resolve();
-        return;
-      }
-
-      if (document.querySelector(`script[src="${src}"]`)) {
-        resolve();
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = src;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
-      document.head.appendChild(script);
-    });
-  }
-
-  async authenticate(integrationData: Record<string, unknown>): Promise<void> {
-    if (typeof window === "undefined") {
-      throw new TypeError("Authentication requires browser environment");
-    }
-
-    await this.loadGoogleAPIs();
-
-    const baseUrl = window.location.origin;
-    const redirectUri = `${baseUrl}/api/integrations/google_calendar/callback`;
-
-    const stateData = {
-      ...integrationData,
-      redirectUri,
-    };
-    const state = encodeURIComponent(JSON.stringify(stateData));
-
-    return new Promise((resolve) => {
-      if (!window.google) {
-        throw new Error("Google Identity Services not loaded");
-      }
-
-      const client = window.google.accounts.oauth2.initCodeClient({
-        client_id: this.clientId,
-        scope: "https://www.googleapis.com/auth/calendar",
-        ux_mode: "redirect",
-        redirect_uri: redirectUri,
-        state,
-        access_type: "offline",
-        prompt: "consent",
-      });
-
-      client.requestCode();
-
-      resolve();
-    });
   }
 
   async getAvailableCalendars(): Promise<CalendarConfig[]> {
@@ -159,25 +83,12 @@ export class GoogleCalendarService implements CalendarIntegrationService {
   }
 
   async testConnection(): Promise<boolean> {
-    try {
-      await this.loadGoogleAPIs();
+    this.status = {
+      isConnected: true,
+      lastChecked: new Date(),
+    };
 
-      this.status = {
-        isConnected: true,
-        lastChecked: new Date(),
-      };
-
-      return true;
-    }
-    catch (error) {
-      consola.error("GoogleCalendar: Connection test error:", error);
-      this.status = {
-        isConnected: false,
-        lastChecked: new Date(),
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-      return false;
-    }
+    return true;
   }
 
   async getCapabilities(): Promise<string[]> {
@@ -358,37 +269,4 @@ export function createGoogleCalendarService(
   clientSecret: string,
 ): GoogleCalendarService {
   return new GoogleCalendarService(integrationId, clientId, clientSecret);
-}
-
-export async function handleGoogleCalendarSave(
-  integrationData: Record<string, unknown>,
-  settingsData: Record<string, unknown>,
-  isExisting: boolean,
-  originalIntegration?: Integration | null,
-): Promise<boolean> {
-  const needsReauth = originalIntegration?.settings
-    ? (originalIntegration.settings as { needsReauth?: boolean })?.needsReauth
-    : false;
-
-  const needsOAuth = !isExisting || needsReauth;
-
-  if (!needsOAuth) {
-    return false;
-  }
-
-  const tempService = createGoogleCalendarService(
-    "temp",
-    settingsData.clientId?.toString() || "",
-    settingsData.clientSecret?.toString() || "",
-  );
-
-  const authData = isExisting
-    ? {
-        ...integrationData,
-        integrationId: (integrationData as { id?: string }).id,
-      }
-    : integrationData;
-
-  await tempService.authenticate(authData);
-  return true;
 }

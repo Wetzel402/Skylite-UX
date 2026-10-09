@@ -49,7 +49,7 @@ export function parseRRuleString(rruleString: string): ICalEvent["rrule"] | unde
         break;
 
       case "UNTIL":
-        rruleObj.until = value;
+        rruleObj.until = normalizeUntil(value);
         break;
     }
   }
@@ -59,6 +59,63 @@ export function parseRRuleString(rruleString: string): ICalEvent["rrule"] | unde
   }
 
   return rruleObj;
+}
+
+function normalizeUntil(value: string): string {
+  if (value.includes("-")) {
+    return value;
+  }
+  try {
+    return ical.Recur.fromString(`FREQ=DAILY;UNTIL=${value}`).until?.toString() ?? value;
+  }
+  catch {
+    return value;
+  }
+}
+
+function untilToIcalString(until: string): string {
+  if (!until.includes("-")) {
+    return until;
+  }
+  try {
+    return ical.Time.fromString(until, undefined).toICALString();
+  }
+  catch {
+    return until;
+  }
+}
+
+export function rruleObjectToString(rrule: {
+  freq: string;
+  interval?: number;
+  byday?: string[];
+  bymonth?: number[];
+  count?: number;
+  until?: string;
+}): string {
+  const parts = [`FREQ=${rrule.freq.toUpperCase()}`];
+
+  if (rrule.interval && rrule.interval > 1) {
+    parts.push(`INTERVAL=${rrule.interval}`);
+  }
+
+  if (rrule.count) {
+    parts.push(`COUNT=${rrule.count}`);
+  }
+
+  if (rrule.until) {
+    parts.push(`UNTIL=${untilToIcalString(rrule.until)}`);
+  }
+
+  if (rrule.byday && rrule.byday.length > 0) {
+    parts.push(`BYDAY=${rrule.byday.join(",")}`);
+  }
+
+  if (rrule.bymonth && rrule.bymonth.length > 0) {
+    parts.push(`BYMONTH=${rrule.bymonth.join(",")}`);
+  }
+
+  return `RRULE:${parts.join(";")}`;
 }
 
 function parseUntilToDate(until: string | undefined): Date | null {

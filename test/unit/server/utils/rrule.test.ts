@@ -26,6 +26,7 @@ import {
   calculateNextDueDate,
   expandRecurringEvents,
   parseRRuleString,
+  rruleObjectToString,
 } from "../../../../server/utils/rrule";
 
 describe("calculateNextDueDate", () => {
@@ -804,7 +805,17 @@ describe("parseRRuleString", () => {
     const r = parseRRuleString("FREQ=DAILY;COUNT=5;UNTIL=20251231T235959Z");
     expect(r?.freq).toBe("DAILY");
     expect(r?.count).toBe(5);
-    expect(r?.until).toBe("20251231T235959Z");
+    expect(r?.until).toBe("2025-12-31T23:59:59Z");
+  });
+
+  it("normalizes a date-only UNTIL to the extended format", () => {
+    const r = parseRRuleString("FREQ=DAILY;UNTIL=20251231");
+    expect(r?.until).toBe("2025-12-31");
+  });
+
+  it("keeps an UNTIL that is already in extended format", () => {
+    const r = parseRRuleString("FREQ=DAILY;UNTIL=2025-12-31T23:59:59Z");
+    expect(r?.until).toBe("2025-12-31T23:59:59Z");
   });
 
   it("returns undefined when FREQ is missing", () => {
@@ -866,5 +877,53 @@ describe("expandRecurringEvents", () => {
       expect(e.start >= start && e.start <= end).toBe(true);
       expect(e.end >= start && e.end <= end).toBe(true);
     }
+  });
+
+  it("expands a rule parsed from a basic-format UNTIL and stops at it", () => {
+    const rrule = parseRRuleString("RRULE:FREQ=DAILY;UNTIL=20250120T235959Z");
+    const events = [
+      {
+        id: "ev-until",
+        start: new Date(Date.UTC(2025, 0, 15, 10, 0, 0)),
+        end: new Date(Date.UTC(2025, 0, 15, 11, 0, 0)),
+        ical_event: {
+          type: "VEVENT" as const,
+          uid: "u-until",
+          summary: "Until",
+          dtstart: "2025-01-15T10:00:00Z",
+          dtend: "2025-01-15T11:00:00Z",
+          rrule,
+        },
+      },
+    ];
+
+    const result = expandRecurringEvents(
+      events,
+      new Date(Date.UTC(2025, 0, 1)),
+      new Date(Date.UTC(2025, 1, 28)),
+    );
+
+    expect(result).toHaveLength(6);
+    expect(result.at(-1)?.start.toISOString()).toBe("2025-01-20T10:00:00.000Z");
+  });
+});
+
+describe("rruleObjectToString", () => {
+  it("builds an RRULE string from the rule fields", () => {
+    expect(
+      rruleObjectToString({ freq: "weekly", interval: 2, count: 3, byday: ["MO", "FR"], bymonth: [1] }),
+    ).toBe("RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=3;BYDAY=MO,FR;BYMONTH=1");
+  });
+
+  it("converts an extended-format UNTIL to basic format", () => {
+    expect(rruleObjectToString({ freq: "DAILY", until: "2025-12-31T23:59:59Z" }))
+      .toBe("RRULE:FREQ=DAILY;UNTIL=20251231T235959Z");
+    expect(rruleObjectToString({ freq: "DAILY", until: "2025-12-31" }))
+      .toBe("RRULE:FREQ=DAILY;UNTIL=20251231");
+  });
+
+  it("keeps a basic-format UNTIL unchanged", () => {
+    expect(rruleObjectToString({ freq: "DAILY", until: "20251231T235959Z" }))
+      .toBe("RRULE:FREQ=DAILY;UNTIL=20251231T235959Z");
   });
 });

@@ -9,6 +9,7 @@ import type {
 
 import { useUsers } from "~/composables/useUsers";
 import { integrationRegistry } from "~/types/integrations";
+import "~/integrations/google_calendar/types";
 
 const props = defineProps<{
   integration: Integration | null;
@@ -350,18 +351,19 @@ async function handleSave() {
     };
 
     const config = currentIntegrationConfig.value;
+    const existingId = props.integration?.id;
 
-    if (config?.customSaveHandler) {
-      const handled = await config.customSaveHandler(
-        { ...integrationData, id: props.integration?.id },
-        settingsData.value,
-        !!props.integration?.id,
-        props.integration,
+    if (
+      config?.capabilities.includes("oauth")
+      && (!existingId || integrationNeedsReauth.value)
+    ) {
+      await startGoogleOAuth(
+        settingsData.value.clientId?.toString() || "",
+        existingId
+          ? { ...integrationData, id: existingId, integrationId: existingId }
+          : integrationData,
       );
-
-      if (handled) {
-        return;
-      }
+      return;
     }
 
     if (!props.integration?.id) {
@@ -391,6 +393,54 @@ async function handleSave() {
   finally {
     isSaving.value = false;
   }
+}
+
+const GOOGLE_IDENTITY_SCRIPT = "https://accounts.google.com/gsi/client";
+
+function loadGoogleIdentityScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${GOOGLE_IDENTITY_SCRIPT}"]`)) {
+      resolve();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = GOOGLE_IDENTITY_SCRIPT;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () =>
+      reject(new Error(`Failed to load script: ${GOOGLE_IDENTITY_SCRIPT}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function startGoogleOAuth(
+  clientId: string,
+  integrationData: Record<string, unknown>,
+) {
+  await loadGoogleIdentityScript();
+
+  if (!window.google) {
+    throw new Error("Google Identity Services not loaded");
+  }
+
+  const redirectUri = `${window.location.origin}/api/integrations/google_calendar/callback`;
+  const state = encodeURIComponent(
+    JSON.stringify({ ...integrationData, redirectUri }),
+  );
+
+  window.google.accounts.oauth2
+    .initCodeClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/calendar",
+      ux_mode: "redirect",
+      redirect_uri: redirectUri,
+      state,
+      access_type: "offline",
+      prompt: "consent",
+    })
+    .requestCode();
 }
 
 function handleDelete() {

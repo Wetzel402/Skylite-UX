@@ -23,7 +23,17 @@ import {
   registerIntegration,
 } from "~/types/integrations";
 
-ical.design.strict = false;
+type ICalDesign = {
+  design?: {
+    strict?: boolean;
+  };
+};
+
+const icalWithDesign = ical as unknown as ICalDesign;
+
+if (icalWithDesign.design) {
+  icalWithDesign.design.strict = false;
+}
 
 export const integrationServices = new Map<string, IntegrationService>();
 
