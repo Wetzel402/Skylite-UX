@@ -71,12 +71,6 @@ export type IntegrationConfig = {
   icon: string;
   dialogFields: DialogField[];
   syncInterval: number;
-  customSaveHandler?: (
-    integrationData: Record<string, unknown>,
-    settingsData: Record<string, unknown>,
-    isExisting: boolean,
-    originalIntegration?: Integration | null,
-  ) => Promise<boolean>;
 };
 
 export type ICalSettings = {

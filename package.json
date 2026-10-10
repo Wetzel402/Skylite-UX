@@ -7,10 +7,11 @@
     "node": ">=26"
   },
   "scripts": {
+    "postinstall": "nuxt prepare",
     "dev": "nuxt dev",
     "build": "nuxt build",
     "preview": "nuxt preview",
-    "type-check": "vue-tsc --noEmit -p tsconfig.json --composite false",
+    "type-check": "NODE_OPTIONS=--max-old-space-size=6144 vue-tsc -b --noEmit",
     "lint": "eslint . --fix",
     "test": "vitest",
     "test:ui": "vitest --ui",

@@ -12,7 +12,6 @@ import type {
   IntegrationStatus,
 } from "~/types/integrations";
 
-import { useStableDate } from "~/composables/useStableDate";
 import { integrationRegistry } from "~/types/integrations";
 
 import type { MealieShoppingList } from "../../../server/integrations/mealie/types";
@@ -23,11 +22,6 @@ export class MealieService implements IntegrationService {
   private integrationId: string;
   private apiKey: string;
   private baseUrl: string;
-
-  private parseStableDate: (
-    dateInput: string | Date | undefined,
-    fallback?: Date,
-  ) => Date;
 
   private status: IntegrationStatus = {
     isConnected: false,
@@ -41,33 +35,19 @@ export class MealieService implements IntegrationService {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.serverService = new ServerMealieService(integrationId);
+  }
 
-    if (import.meta.client) {
-      const { parseStableDate, getStableDate } = useStableDate();
-      this.parseStableDate = parseStableDate;
-      this.status.lastChecked = getStableDate();
-    }
-    else {
-      this.parseStableDate = (
-        dateInput: string | Date | undefined,
-        fallback?: Date,
-      ) => {
-        if (!dateInput)
-          return fallback || new Date();
-        return new Date(dateInput);
-      };
-      this.status.lastChecked = new Date();
-    }
+  private parseStableDate(
+    dateInput: string | Date | undefined,
+    fallback?: Date,
+  ): Date {
+    if (!dateInput)
+      return fallback || new Date();
+    return new Date(dateInput);
   }
 
   private getCurrentDate(): Date {
-    if (import.meta.client) {
-      const { getStableDate } = useStableDate();
-      return getStableDate();
-    }
-    else {
-      return new Date();
-    }
+    return new Date();
   }
 
   async initialize(): Promise<void> {
