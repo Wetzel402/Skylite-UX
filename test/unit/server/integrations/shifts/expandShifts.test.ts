@@ -18,8 +18,7 @@ import { expandShiftsToEvents } from "../../../../../server/integrations/shifts/
 type SlotShape = {
   id: string;
   shiftRotationId: string;
-  weekIndex: number;
-  dayOfWeek: number;
+  dayIndex: number;
   startTime: string;
   endTime: string;
   label: string | null;
@@ -45,7 +44,7 @@ type RotationShape = {
   id: string;
   integrationId: string;
   name: string;
-  cycleWeeks: number;
+  cycleDays: number;
   color: string | null;
   order: number;
   slots: SlotShape[];
@@ -57,7 +56,7 @@ function createRotation(overrides: Partial<RotationShape> & { integrationId: str
     id: "rot-1",
     integrationId: overrides.integrationId,
     name: "Rotation",
-    cycleWeeks: 1,
+    cycleDays: 7,
     color: null,
     order: 0,
     slots: [],
@@ -70,8 +69,7 @@ function createSlot(overrides: Partial<SlotShape> & { shiftRotationId: string })
   return {
     id: "slot-1",
     shiftRotationId: overrides.shiftRotationId,
-    weekIndex: 0,
-    dayOfWeek: 0,
+    dayIndex: 0,
     startTime: "09:00",
     endTime: "17:00",
     label: null,
@@ -92,6 +90,16 @@ function createAssignment(
     endDate: null,
     ...overrides,
   };
+}
+
+function segmentSlots(rotationId: string, pattern: boolean[]): SlotShape[] {
+  return pattern.flatMap((on, dayIndex) =>
+    on ? [createSlot({ id: `slot-${dayIndex}`, shiftRotationId: rotationId, dayIndex })] : [],
+  );
+}
+
+function utcDays(events: { start: Date | string }[]): string[] {
+  return events.map(ev => new Date(ev.start).toISOString().slice(0, 10));
 }
 
 describe("expandShiftsToEvents", () => {
@@ -129,251 +137,230 @@ describe("expandShiftsToEvents", () => {
     const rotation = createRotation({
       integrationId,
       assignments: [],
-      slots: [createSlot({ shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 0 })],
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
 
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-30");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-30"));
 
     expect(result).toEqual([]);
   });
 
-  it("produces one event per matching day for single slot and 1-week cycle", async () => {
-    const assignmentStart = new Date("2025-06-01");
+  it("produces one event per matching day for a single slot and 7-day cycle", async () => {
     const rotation = createRotation({
       id: "rot-1",
       integrationId,
       name: "Weekend",
-      cycleWeeks: 1,
-      slots: [
-        createSlot({
-          id: "slot-1",
-          shiftRotationId: "rot-1",
-          weekIndex: 0,
-          dayOfWeek: 0,
-          label: "Sunday",
-        }),
-      ],
+      cycleDays: 7,
+      slots: [createSlot({ id: "slot-1", shiftRotationId: "rot-1", dayIndex: 0, label: "Sunday" })],
       assignments: [
-        createAssignment({
-          id: "assign-1",
-          shiftRotationId: "rot-1",
-          startDate: assignmentStart,
-          endDate: null,
-        }),
+        createAssignment({ id: "assign-1", shiftRotationId: "rot-1", startDate: new Date("2025-06-01") }),
       ],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
 
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-30");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-30"));
 
-    const sundaysInJune2025 = [1, 8, 15, 22, 29];
-    expect(result).toHaveLength(sundaysInJune2025.length);
-    result.forEach((ev, i) => {
+    expect(utcDays(result)).toEqual(["2025-06-01", "2025-06-08", "2025-06-15", "2025-06-22", "2025-06-29"]);
+    result.forEach((ev) => {
       expect(ev.title).toBe("Sunday");
       expect(ev.description).toBe("Weekend");
-      expect(ev.allDay).toBe(true);
       expect(ev.integrationId).toBe(integrationId);
       expect(ev.id).toContain("assign-1");
       expect(ev.id).toContain("slot-1");
-      const startDate = new Date(ev.start);
-      expect(startDate.getUTCDate()).toBe(sundaysInJune2025[i]);
-      expect(startDate.getUTCMonth()).toBe(5);
-      expect(startDate.getUTCFullYear()).toBe(2025);
-      expect(startDate.getUTCHours()).toBe(0);
-      expect(startDate.getUTCMinutes()).toBe(0);
-      const endDate = new Date(ev.end);
-      expect(endDate.getUTCDate()).toBe(sundaysInJune2025[i] + 1);
       expect(ev.color).toBe("#06b6d4");
     });
   });
 
   it("uses slot label when set, else rotation name", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
-      id: "rot-1",
       integrationId,
       name: "Rotation Name",
-      cycleWeeks: 1,
-      slots: [
-        createSlot({
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0, label: "Custom Slot" })],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
+    });
+    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
+
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-07"));
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0]!.title).toBe("Custom Slot");
+    expect(result[0]!.description).toBe("Rotation Name");
+  });
+
+  it("produces events only within assignment startDate and endDate window", async () => {
+    const rotation = createRotation({
+      integrationId,
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
+      assignments: [
+        createAssignment({
           shiftRotationId: "rot-1",
-          weekIndex: 0,
-          dayOfWeek: 0,
-          label: "Custom Slot",
+          startDate: new Date("2025-06-05"),
+          endDate: new Date("2025-06-12"),
         }),
       ],
-      assignments: [
-        createAssignment({ shiftRotationId: "rot-1", startDate: assignmentStart }),
-      ],
+    });
+    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
+
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-30"));
+
+    expect(utcDays(result)).toEqual(["2025-06-05", "2025-06-12"]);
+  });
+
+  it("14-day cycle: events only on the matching day index", async () => {
+    const rotation = createRotation({
+      integrationId,
+      cycleDays: 14,
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 7 })],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
+    });
+    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
+
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-30"));
+
+    expect(utcDays(result)).toEqual(["2025-06-08", "2025-06-22"]);
+  });
+
+  it("8-day cycle (2-2-2 with 2 off) repeats every 8 days without gaps", async () => {
+    const rotation = createRotation({
+      integrationId,
+      cycleDays: 8,
+      slots: segmentSlots("rot-1", [true, true, true, true, true, true, false, false]),
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
+    });
+    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
+
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-17"));
+
+    expect(utcDays(result)).toEqual([
+      "2025-06-01",
+      "2025-06-02",
+      "2025-06-03",
+      "2025-06-04",
+      "2025-06-05",
+      "2025-06-06",
+      "2025-06-09",
+      "2025-06-10",
+      "2025-06-11",
+      "2025-06-12",
+      "2025-06-13",
+      "2025-06-14",
+      "2025-06-17",
+    ]);
+  });
+
+  it("16-day cycle (4 days, 4 off, 4 nights, 4 off) maps each day index", async () => {
+    const pattern = [
+      ...Array.from({ length: 4 }, () => true),
+      ...Array.from({ length: 4 }, () => false),
+      ...Array.from({ length: 4 }, () => true),
+      ...Array.from({ length: 4 }, () => false),
+    ];
+    const rotation = createRotation({
+      integrationId,
+      cycleDays: 16,
+      slots: segmentSlots("rot-1", pattern),
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
+    });
+    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
+
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-20"));
+
+    expect(utcDays(result)).toEqual([
+      "2025-06-01",
+      "2025-06-02",
+      "2025-06-03",
+      "2025-06-04",
+      "2025-06-09",
+      "2025-06-10",
+      "2025-06-11",
+      "2025-06-12",
+      "2025-06-17",
+      "2025-06-18",
+      "2025-06-19",
+      "2025-06-20",
+    ]);
+  });
+
+  it("non-weekly cycle stays aligned across a month boundary", async () => {
+    const rotation = createRotation({
+      integrationId,
+      cycleDays: 9,
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-01-25") })],
+    });
+    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
+
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-02-01"), new Date("2025-03-10"));
+
+    expect(utcDays(result)).toEqual(["2025-02-03", "2025-02-12", "2025-02-21", "2025-03-02"]);
+  });
+
+  it("aligns days when the window start is not at UTC midnight", async () => {
+    const rotation = createRotation({
+      integrationId,
+      cycleDays: 2,
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
 
     const result = await expandShiftsToEvents(
       integrationId,
       null,
-      new Date("2025-06-01"),
-      new Date("2025-06-07"),
+      new Date("2025-06-01T15:30:00Z"),
+      new Date("2025-06-06T00:00:00Z"),
     );
 
-    expect(result.length).toBeGreaterThan(0);
-    expect(result[0].title).toBe("Custom Slot");
-    expect(result[0].description).toBe("Rotation Name");
-  });
-
-  it("produces events only within assignment startDate and endDate window", async () => {
-    const assignmentStart = new Date("2025-06-05");
-    const assignmentEnd = new Date("2025-06-12");
-    const rotation = createRotation({
-      integrationId,
-      cycleWeeks: 1,
-      slots: [
-        createSlot({ shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 0 }),
-      ],
-      assignments: [
-        createAssignment({
-          shiftRotationId: "rot-1",
-          startDate: assignmentStart,
-          endDate: assignmentEnd,
-        }),
-      ],
-    });
-    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
-
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-30");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
-
-    expect(result).toHaveLength(2);
-    expect(new Date(result[0].start).getUTCDate()).toBe(5);
-    expect(new Date(result[1].start).getUTCDate()).toBe(12);
-  });
-
-  it("two-week cycle: events only on matching week and day", async () => {
-    const assignmentStart = new Date("2025-06-01");
-    const rotation = createRotation({
-      integrationId,
-      cycleWeeks: 2,
-      slots: [
-        createSlot({
-          shiftRotationId: "rot-1",
-          weekIndex: 1,
-          dayOfWeek: 0,
-        }),
-      ],
-      assignments: [
-        createAssignment({ shiftRotationId: "rot-1", startDate: assignmentStart }),
-      ],
-    });
-    mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
-
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-30");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
-
-    expect(result).toHaveLength(2);
-    expect(new Date(result[0].start).getUTCDate()).toBe(8);
-    expect(new Date(result[1].start).getUTCDate()).toBe(22);
+    expect(utcDays(result)).toEqual(["2025-06-01", "2025-06-03", "2025-06-05"]);
   });
 
   it("multiple slots same day produce multiple events per day", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
       integrationId,
-      cycleWeeks: 1,
       slots: [
-        createSlot({
-          id: "slot-a",
-          shiftRotationId: "rot-1",
-          weekIndex: 0,
-          dayOfWeek: 0,
-          label: "AM",
-        }),
-        createSlot({
-          id: "slot-b",
-          shiftRotationId: "rot-1",
-          weekIndex: 0,
-          dayOfWeek: 0,
-          label: "PM",
-        }),
+        createSlot({ id: "slot-a", shiftRotationId: "rot-1", dayIndex: 0, label: "AM" }),
+        createSlot({ id: "slot-b", shiftRotationId: "rot-1", dayIndex: 0, label: "PM" }),
       ],
-      assignments: [
-        createAssignment({ shiftRotationId: "rot-1", startDate: assignmentStart }),
-      ],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
 
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-07");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-07"));
 
     expect(result).toHaveLength(2);
-    expect(result[0].title).toBe("AM");
-    expect(result[1].title).toBe("PM");
-    expect(new Date(result[0].start).getTime()).toBe(new Date(result[1].start).getTime());
+    expect(result.map(ev => ev.title).sort()).toEqual(["AM", "PM"]);
   });
 
   it("multiple assignments produce events for each", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
       integrationId,
-      cycleWeeks: 1,
-      slots: [
-        createSlot({ shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 0 }),
-      ],
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
       assignments: [
-        createAssignment({
-          id: "assign-a",
-          shiftRotationId: "rot-1",
-          startDate: assignmentStart,
-        }),
-        createAssignment({
-          id: "assign-b",
-          shiftRotationId: "rot-1",
-          startDate: assignmentStart,
-        }),
+        createAssignment({ id: "assign-a", shiftRotationId: "rot-1", startDate: new Date("2025-06-01") }),
+        createAssignment({ id: "assign-b", shiftRotationId: "rot-1", startDate: new Date("2025-06-01") }),
       ],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
 
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-07");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-07"));
 
     expect(result).toHaveLength(2);
-    expect(result[0].id).toContain("assign-a");
-    expect(result[1].id).toContain("assign-b");
+    expect(result.map(ev => ev.id).join(",")).toContain("assign-a");
+    expect(result.map(ev => ev.id).join(",")).toContain("assign-b");
   });
 
   it("color precedence: user > slot > rotation > settings default", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
       integrationId,
       name: "R",
       color: "#0000ff",
-      cycleWeeks: 1,
-      slots: [
-        createSlot({
-          shiftRotationId: "rot-1",
-          weekIndex: 0,
-          dayOfWeek: 0,
-          color: "#00ff00",
-        }),
-      ],
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0, color: "#00ff00" })],
       assignments: [
         createAssignment({
           shiftRotationId: "rot-1",
-          startDate: assignmentStart,
-          user: {
-            id: "u1",
-            name: "User",
-            avatar: null,
-            color: "#ff0000",
-          },
+          startDate: new Date("2025-06-01"),
+          user: { id: "u1", name: "User", avatar: null, color: "#ff0000" },
         }),
       ],
     });
@@ -386,29 +373,18 @@ describe("expandShiftsToEvents", () => {
       new Date("2025-06-07"),
     );
 
-    expect(result[0].color).toBe("#ff0000");
+    expect(result[0]!.color).toBe("#ff0000");
   });
 
   it("settings.userIds without useUserColors: events get users from findMany", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
       integrationId,
-      cycleWeeks: 1,
-      slots: [
-        createSlot({ shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 0 }),
-      ],
-      assignments: [
-        createAssignment({ shiftRotationId: "rot-1", startDate: assignmentStart }),
-      ],
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
     mockPrisma.user.findMany.mockResolvedValue([
-      {
-        id: "u1",
-        name: "Alice",
-        avatar: null,
-        color: null,
-      },
+      { id: "u1", name: "Alice", avatar: null, color: null },
     ]);
 
     const result = await expandShiftsToEvents(
@@ -422,29 +398,20 @@ describe("expandShiftsToEvents", () => {
       where: { id: { in: ["u1"] } },
       select: { id: true, name: true, avatar: true, color: true },
     });
-    expect(result[0].users).toHaveLength(1);
-    expect(result[0].users![0].id).toBe("u1");
-    expect(result[0].users![0].name).toBe("Alice");
+    expect(result[0]!.users).toHaveLength(1);
+    expect(result[0]!.users![0]!.id).toBe("u1");
+    expect(result[0]!.users![0]!.name).toBe("Alice");
   });
 
   it("useUserColors true: event gets assignment user and user color", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
       integrationId,
-      cycleWeeks: 1,
-      slots: [
-        createSlot({ shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 0 }),
-      ],
+      slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0 })],
       assignments: [
         createAssignment({
           shiftRotationId: "rot-1",
-          startDate: assignmentStart,
-          user: {
-            id: "u1",
-            name: "Bob",
-            avatar: null,
-            color: "#aabbcc",
-          },
+          startDate: new Date("2025-06-01"),
+          user: { id: "u1", name: "Bob", avatar: null, color: "#aabbcc" },
         }),
       ],
     });
@@ -457,33 +424,141 @@ describe("expandShiftsToEvents", () => {
       new Date("2025-06-07"),
     );
 
-    expect(result[0].users).toHaveLength(1);
-    expect(result[0].users![0].name).toBe("Bob");
-    expect(result[0].color).toBe("#aabbcc");
+    expect(result[0]!.users).toHaveLength(1);
+    expect(result[0]!.users![0]!.name).toBe("Bob");
+    expect(result[0]!.color).toBe("#aabbcc");
+  });
+
+  describe("timed events", () => {
+    function timedRotation(slot: Partial<SlotShape>, startDate: string) {
+      return createRotation({
+        integrationId,
+        cycleDays: 1,
+        slots: [createSlot({ shiftRotationId: "rot-1", dayIndex: 0, ...slot })],
+        assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date(startDate) })],
+      });
+    }
+
+    it("uses slot times in UTC when no time zone is given", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "09:00", endTime: "17:00" }, "2025-06-01"),
+      ]);
+
+      const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-01"));
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.allDay).toBe(false);
+      expect(new Date(result[0]!.start).toISOString()).toBe("2025-06-01T09:00:00.000Z");
+      expect(new Date(result[0]!.end).toISOString()).toBe("2025-06-01T17:00:00.000Z");
+    });
+
+    it("converts slot wall-clock times from America/Chicago to UTC", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "09:00", endTime: "17:00" }, "2025-06-01"),
+      ]);
+
+      const result = await expandShiftsToEvents(
+        integrationId,
+        null,
+        new Date("2025-06-01"),
+        new Date("2025-06-01"),
+        "America/Chicago",
+      );
+
+      expect(new Date(result[0]!.start).toISOString()).toBe("2025-06-01T14:00:00.000Z");
+      expect(new Date(result[0]!.end).toISOString()).toBe("2025-06-01T22:00:00.000Z");
+    });
+
+    it("overnight shift ends on the next calendar day", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "19:00", endTime: "07:00" }, "2025-06-01"),
+      ]);
+
+      const result = await expandShiftsToEvents(
+        integrationId,
+        null,
+        new Date("2025-06-01"),
+        new Date("2025-06-01"),
+        "America/Chicago",
+      );
+
+      expect(new Date(result[0]!.start).toISOString()).toBe("2025-06-02T00:00:00.000Z");
+      expect(new Date(result[0]!.end).toISOString()).toBe("2025-06-02T12:00:00.000Z");
+    });
+
+    it("keeps local wall-clock times across a DST change", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "09:00", endTime: "17:00" }, "2025-03-08"),
+      ]);
+
+      const result = await expandShiftsToEvents(
+        integrationId,
+        null,
+        new Date("2025-03-08"),
+        new Date("2025-03-09"),
+        "America/Chicago",
+      );
+
+      expect(result.map(ev => new Date(ev.start).toISOString())).toEqual([
+        "2025-03-08T15:00:00.000Z",
+        "2025-03-09T14:00:00.000Z",
+      ]);
+    });
+
+    it("overnight shift spanning the DST change is an hour shorter", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "19:00", endTime: "07:00" }, "2025-03-08"),
+      ]);
+
+      const result = await expandShiftsToEvents(
+        integrationId,
+        null,
+        new Date("2025-03-08"),
+        new Date("2025-03-08"),
+        "America/Chicago",
+      );
+
+      expect(new Date(result[0]!.start).toISOString()).toBe("2025-03-09T01:00:00.000Z");
+      expect(new Date(result[0]!.end).toISOString()).toBe("2025-03-09T12:00:00.000Z");
+    });
+
+    it("skips slots with invalid times", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "25:00", endTime: "07:00" }, "2025-06-01"),
+      ]);
+
+      const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-03"));
+
+      expect(result).toEqual([]);
+    });
+
+    it("assignment start with a time component still includes its first day", async () => {
+      mockPrisma.shiftRotation.findMany.mockResolvedValue([
+        timedRotation({ startTime: "09:00", endTime: "17:00" }, "2025-06-01T05:00:00Z"),
+      ]);
+
+      const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-02"));
+
+      expect(utcDays(result)).toEqual(["2025-06-01", "2025-06-02"]);
+    });
   });
 
   it("returns events sorted by start time", async () => {
-    const assignmentStart = new Date("2025-06-01");
     const rotation = createRotation({
       integrationId,
-      cycleWeeks: 1,
       slots: [
-        createSlot({ id: "s1", shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 0 }),
-        createSlot({ id: "s2", shiftRotationId: "rot-1", weekIndex: 0, dayOfWeek: 1 }),
+        createSlot({ id: "s1", shiftRotationId: "rot-1", dayIndex: 0 }),
+        createSlot({ id: "s2", shiftRotationId: "rot-1", dayIndex: 1 }),
       ],
-      assignments: [
-        createAssignment({ shiftRotationId: "rot-1", startDate: assignmentStart }),
-      ],
+      assignments: [createAssignment({ shiftRotationId: "rot-1", startDate: new Date("2025-06-01") })],
     });
     mockPrisma.shiftRotation.findMany.mockResolvedValue([rotation]);
 
-    const start = new Date("2025-06-01");
-    const end = new Date("2025-06-14");
-    const result = await expandShiftsToEvents(integrationId, null, start, end);
+    const result = await expandShiftsToEvents(integrationId, null, new Date("2025-06-01"), new Date("2025-06-14"));
 
     for (let i = 1; i < result.length; i++) {
-      const prev = new Date(result[i - 1].start).getTime();
-      const curr = new Date(result[i].start).getTime();
+      const prev = new Date(result[i - 1]!.start).getTime();
+      const curr = new Date(result[i]!.start).getTime();
       expect(curr).toBeGreaterThanOrEqual(prev);
     }
   });

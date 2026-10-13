@@ -44,6 +44,7 @@ export default defineEventHandler(async (event) => {
       settings as Parameters<typeof expandShiftsToEvents>[1],
       startDate,
       endDate,
+      useRuntimeConfig().public.tz,
     );
     return { events };
   }

@@ -115,7 +115,7 @@ model ShiftRotation {
   id            String   @id @default(cuid())
   integrationId String
   name          String
-  cycleWeeks    Int
+  cycleDays     Int
   color         String?
   order         Int       @default(0)
   createdAt     DateTime  @default(now())
@@ -131,8 +131,7 @@ model ShiftRotation {
 model ShiftSlot {
   id              String   @id @default(cuid())
   shiftRotationId String
-  weekIndex       Int
-  dayOfWeek       Int
+  dayIndex        Int
   startTime       String
   endTime         String
   label           String?
@@ -143,7 +142,7 @@ model ShiftSlot {
 
   shiftRotation ShiftRotation @relation(fields: [shiftRotationId], references: [id], onDelete: Cascade)
 
-  @@unique([shiftRotationId, weekIndex, dayOfWeek])
+  @@unique([shiftRotationId, dayIndex])
   @@map("shift_slots")
 }
 

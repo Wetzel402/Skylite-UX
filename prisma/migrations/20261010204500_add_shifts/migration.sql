@@ -3,7 +3,7 @@ CREATE TABLE "shift_rotations" (
     "id" TEXT NOT NULL,
     "integrationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "cycleWeeks" INTEGER NOT NULL,
+    "cycleDays" INTEGER NOT NULL,
     "color" TEXT,
     "order" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,8 +16,7 @@ CREATE TABLE "shift_rotations" (
 CREATE TABLE "shift_slots" (
     "id" TEXT NOT NULL,
     "shiftRotationId" TEXT NOT NULL,
-    "weekIndex" INTEGER NOT NULL,
-    "dayOfWeek" INTEGER NOT NULL,
+    "dayIndex" INTEGER NOT NULL,
     "startTime" TEXT NOT NULL,
     "endTime" TEXT NOT NULL,
     "label" TEXT,
@@ -39,6 +38,9 @@ CREATE TABLE "shift_assignments" (
 
     CONSTRAINT "shift_assignments_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "shift_slots_shiftRotationId_dayIndex_key" ON "shift_slots"("shiftRotationId", "dayIndex");
 
 -- AddForeignKey
 ALTER TABLE "shift_rotations" ADD CONSTRAINT "shift_rotations_integrationId_fkey" FOREIGN KEY ("integrationId") REFERENCES "integrations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

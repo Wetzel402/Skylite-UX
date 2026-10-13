@@ -145,6 +145,34 @@ describe("gET /api/calendar-events", () => {
       expect(response.length).toBeGreaterThan(1);
     });
 
+    it("keeps recurring local events at the same wall-clock time after DST ends", async () => {
+      const recurringEvent = createBaseEvent({
+        id: "event-weekly",
+        start: new Date("2026-10-25T14:30:00Z"),
+        end: new Date("2026-10-25T15:00:00Z"),
+        ical_event: {
+          rrule: { freq: "WEEKLY", count: 2 },
+        } as ICalEvent,
+      });
+
+      prisma.calendarEvent.findMany.mockResolvedValue([recurringEvent]);
+
+      const event = createMockH3Event({
+        query: {
+          start: "2026-10-01T00:00:00Z",
+          end: "2026-12-01T00:00:00Z",
+        },
+      });
+
+      const response = await handler(event);
+
+      expect(useRuntimeConfig().public.tz).toBe("America/Chicago");
+      expect(response.map(e => new Date(e.start).toISOString())).toEqual([
+        "2026-10-25T14:30:00.000Z",
+        "2026-11-01T15:30:00.000Z",
+      ]);
+    });
+
     it("returns no occurrences when recurring event is entirely after date range", async () => {
       const recurringEvent = createBaseEvent({
         id: "event-recurring",

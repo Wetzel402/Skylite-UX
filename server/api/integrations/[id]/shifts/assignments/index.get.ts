@@ -15,9 +15,9 @@ export default defineEventHandler(async (event) => {
     },
     include: {
       user: { select: { id: true, name: true, avatar: true, color: true } },
-      shiftRotation: { select: { id: true, name: true, cycleWeeks: true, color: true } },
+      shiftRotation: { select: { id: true, name: true, cycleDays: true, color: true } },
     },
-    orderBy: { startDate: "asc" },
+    orderBy: [{ startDate: "asc" }, { id: "asc" }],
   });
   return assignments;
 });

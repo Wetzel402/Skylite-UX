@@ -906,6 +906,104 @@ describe("expandRecurringEvents", () => {
     expect(result).toHaveLength(6);
     expect(result.at(-1)?.start.toISOString()).toBe("2025-01-20T10:00:00.000Z");
   });
+
+  const weeklyAt = (start: string, end: string, rrule: ICalEvent["rrule"], allDay = false) => ({
+    id: "ev-weekly",
+    start: new Date(start),
+    end: new Date(end),
+    allDay,
+    ical_event: {
+      type: "VEVENT" as const,
+      uid: "u-weekly",
+      summary: "Weekly",
+      dtstart: start,
+      dtend: end,
+      rrule,
+    },
+  });
+
+  it("keeps the local wall-clock time across the fall-back DST change", () => {
+    const events = [weeklyAt("2026-10-25T14:30:00.000Z", "2026-10-25T15:00:00.000Z", { freq: "WEEKLY", count: 3 })];
+
+    const result = expandRecurringEvents(
+      events,
+      new Date("2026-10-01T00:00:00Z"),
+      new Date("2026-12-01T00:00:00Z"),
+      "America/Chicago",
+    );
+
+    expect(result.map(e => e.start.toISOString())).toEqual([
+      "2026-10-25T14:30:00.000Z",
+      "2026-11-01T15:30:00.000Z",
+      "2026-11-08T15:30:00.000Z",
+    ]);
+    expect(result[1]?.end.toISOString()).toBe("2026-11-01T16:00:00.000Z");
+    expect(result[1]?.id).toBe("ev-weekly-20261101T153000Z");
+  });
+
+  it("keeps the local wall-clock time across the spring-forward DST change", () => {
+    const events = [weeklyAt("2027-03-07T15:30:00.000Z", "2027-03-07T16:00:00.000Z", { freq: "WEEKLY", count: 2 })];
+
+    const result = expandRecurringEvents(
+      events,
+      new Date("2027-03-01T00:00:00Z"),
+      new Date("2027-04-01T00:00:00Z"),
+      "America/Chicago",
+    );
+
+    expect(result.map(e => e.start.toISOString())).toEqual([
+      "2027-03-07T15:30:00.000Z",
+      "2027-03-14T14:30:00.000Z",
+    ]);
+  });
+
+  it("matches BYDAY in local time for evening events", () => {
+    const events = [weeklyAt("2026-10-06T01:00:00.000Z", "2026-10-06T02:00:00.000Z", { freq: "WEEKLY", byday: ["MO"], count: 2 })];
+
+    const result = expandRecurringEvents(
+      events,
+      new Date("2026-10-01T00:00:00Z"),
+      new Date("2026-11-01T00:00:00Z"),
+      "America/Chicago",
+    );
+
+    expect(result.map(e => e.start.toISOString())).toEqual([
+      "2026-10-06T01:00:00.000Z",
+      "2026-10-13T01:00:00.000Z",
+    ]);
+  });
+
+  it("applies a UTC UNTIL against the local occurrence times", () => {
+    const events = [weeklyAt("2026-10-25T14:30:00.000Z", "2026-10-25T15:00:00.000Z", { freq: "WEEKLY", until: "2026-11-01T15:30:00Z" })];
+
+    const result = expandRecurringEvents(
+      events,
+      new Date("2026-10-01T00:00:00Z"),
+      new Date("2026-12-01T00:00:00Z"),
+      "America/Chicago",
+    );
+
+    expect(result.map(e => e.start.toISOString())).toEqual([
+      "2026-10-25T14:30:00.000Z",
+      "2026-11-01T15:30:00.000Z",
+    ]);
+  });
+
+  it("keeps all-day recurrences on UTC midnight", () => {
+    const events = [weeklyAt("2026-10-25T00:00:00.000Z", "2026-10-26T00:00:00.000Z", { freq: "WEEKLY", count: 2 }, true)];
+
+    const result = expandRecurringEvents(
+      events,
+      new Date("2026-10-01T00:00:00Z"),
+      new Date("2026-12-01T00:00:00Z"),
+      "America/Chicago",
+    );
+
+    expect(result.map(e => e.start.toISOString())).toEqual([
+      "2026-10-25T00:00:00.000Z",
+      "2026-11-01T00:00:00.000Z",
+    ]);
+  });
 });
 
 describe("rruleObjectToString", () => {

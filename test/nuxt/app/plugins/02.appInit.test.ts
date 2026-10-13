@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { integrationServices } from "../../../../app/plugins/02.appInit";
 import { getBrowserTimezone, isTimezoneRegistered } from "~/types/global";
+import { isValidTimezone } from "~/types/ui";
 
 describe("02.appInit plugin", () => {
   it("should export integrationServices as a Map", () => {
@@ -20,6 +21,17 @@ describe("02.appInit plugin", () => {
     if (registered) {
       expect(tz).toBeDefined();
       expect(typeof tz).toBe("string");
+    }
+  });
+
+  it("registers the configured timezone without fetching VTIMEZONE data", () => {
+    const configuredTz = useRuntimeConfig().public.tz as string | undefined;
+    if (configuredTz && isValidTimezone(configuredTz)) {
+      expect(isTimezoneRegistered()).toBe(true);
+      expect(getBrowserTimezone()).toBe(configuredTz);
+    }
+    else {
+      expect(isTimezoneRegistered()).toBe(false);
     }
   });
 

@@ -1,82 +1,10 @@
-import consola from "consola";
-import ical from "ical.js";
-
 import type { CalendarEvent } from "~/types/calendar";
 
 import prisma from "~/lib/prisma";
 
 import type { ICalEvent } from "../../integrations/iCal/types";
 
-function expandRecurringEvent(event: CalendarEvent, startDate: Date, endDate: Date): CalendarEvent[] {
-  const events: CalendarEvent[] = [];
-
-  try {
-    if (!event.ical_event?.rrule) {
-      return [event];
-    }
-
-    const vevent = new ical.Component(["vevent", [], []]);
-    vevent.addPropertyWithValue("uid", event.id);
-    vevent.addPropertyWithValue("summary", event.title);
-    vevent.addPropertyWithValue("description", event.description);
-    vevent.addPropertyWithValue("location", event.location);
-
-    const dtstart = ical.Time.fromJSDate(new Date(event.start), true);
-    vevent.addPropertyWithValue("dtstart", dtstart);
-    const dtend = ical.Time.fromJSDate(new Date(event.end), true);
-    vevent.addPropertyWithValue("dtend", dtend);
-
-    const rrule = new ical.Property("rrule", vevent);
-    rrule.setValue(event.ical_event.rrule);
-    vevent.addProperty(rrule);
-
-    const expansion = new ical.RecurExpansion({
-      component: vevent,
-      dtstart,
-    });
-
-    let count = 0;
-    const maxInstances = 1000;
-
-    while (count < maxInstances) {
-      const currentTime = expansion.next();
-
-      if (!currentTime) {
-        break;
-      }
-
-      const currentDate = currentTime.toJSDate();
-
-      if (currentDate > endDate) {
-        break;
-      }
-
-      if (currentDate >= startDate) {
-        const duration = new Date(event.end).getTime() - new Date(event.start).getTime();
-        const newEnd = new Date(currentDate.getTime() + duration);
-
-        events.push({
-          ...event,
-          id: `${event.id}-${currentTime.toICALString()}`,
-          start: currentDate,
-          end: newEnd,
-          ical_event: {
-            ...event.ical_event,
-            dtstart: ical.Time.fromJSDate(currentDate, true).toString(),
-            dtend: ical.Time.fromJSDate(newEnd, true).toString(),
-          },
-        });
-      }
-      count++;
-    }
-  }
-  catch (error) {
-    consola.warn("Failed to expand recurring event:", error);
-    return [event];
-  }
-
-  return events;
-}
+import { expandRecurringEvents } from "../../utils/rrule";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -127,8 +55,11 @@ export default defineEventHandler(async (event) => {
       users: event.users.map(ce => ce.user),
     }));
 
-    const expandedEvents = mappedEvents.flatMap(event =>
-      expandRecurringEvent(event, startDate, endDate),
+    const expandedEvents = expandRecurringEvents(
+      mappedEvents,
+      startDate,
+      endDate,
+      useRuntimeConfig().public.tz,
     );
 
     return expandedEvents.sort((a, b) =>

@@ -1,3 +1,5 @@
+import { CalendarDateTime } from "@internationalized/date";
+
 import type { CalendarEvent } from "~/types/calendar";
 
 import prisma from "~/lib/prisma";
@@ -8,11 +10,25 @@ type ShiftsSettings = {
   useUserColors?: boolean;
 };
 
+type TimeOfDay = { hour: number; minute: number };
+
+function parseTimeOfDay(value: string): TimeOfDay | null {
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match)
+    return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59)
+    return null;
+  return { hour, minute };
+}
+
 export async function expandShiftsToEvents(
   integrationId: string,
   settings: ShiftsSettings | null,
   startDate: Date,
   endDate: Date,
+  timeZone = "UTC",
 ): Promise<CalendarEvent[]> {
   const rotations = await prisma.shiftRotation.findMany({
     where: { integrationId },
@@ -36,35 +52,55 @@ export async function expandShiftsToEvents(
   const events: CalendarEvent[] = [];
   const oneDayMs = 24 * 60 * 60 * 1000;
 
+  const windowStart = Date.UTC(
+    startDate.getUTCFullYear(),
+    startDate.getUTCMonth(),
+    startDate.getUTCDate(),
+  );
+
   for (const rotation of rotations) {
-    const { cycleWeeks } = rotation;
+    const { cycleDays } = rotation;
+    if (cycleDays < 1)
+      continue;
     for (const assignment of rotation.assignments) {
-      const assignmentStart = new Date(assignment.startDate).getTime();
+      const assignmentStartDate = new Date(assignment.startDate);
+      const assignmentStart = Date.UTC(
+        assignmentStartDate.getUTCFullYear(),
+        assignmentStartDate.getUTCMonth(),
+        assignmentStartDate.getUTCDate(),
+      );
       const assignmentEnd = assignment.endDate
         ? new Date(assignment.endDate).getTime()
         : Number.POSITIVE_INFINITY;
 
-      for (let t = startDate.getTime(); t <= endDate.getTime(); t += oneDayMs) {
+      for (let t = windowStart; t <= endDate.getTime(); t += oneDayMs) {
         const d = new Date(t);
         if (t < assignmentStart || t > assignmentEnd)
           continue;
 
         const daysSince = Math.floor((t - assignmentStart) / oneDayMs);
-        const cycleDays = cycleWeeks * 7;
-        const dayInCycle = ((daysSince % cycleDays) + cycleDays) % cycleDays;
-        const weekIndex = Math.floor(dayInCycle / 7);
-        const dayOfWeek = dayInCycle % 7;
+        const dayIndex = daysSince % cycleDays;
 
-        const slotsForDay = rotation.slots.filter(
-          s => s.weekIndex === weekIndex && s.dayOfWeek === dayOfWeek,
-        );
+        const slotsForDay = rotation.slots.filter(s => s.dayIndex === dayIndex);
 
         for (const slot of slotsForDay) {
-          const y = d.getUTCFullYear();
-          const m = d.getUTCMonth();
-          const day = d.getUTCDate();
-          const start = new Date(Date.UTC(y, m, day, 0, 0, 0, 0));
-          const end = new Date(Date.UTC(y, m, day + 1, 0, 0, 0, 0));
+          const startTime = parseTimeOfDay(slot.startTime);
+          const endTime = parseTimeOfDay(slot.endTime);
+          if (!startTime || !endTime)
+            continue;
+          const isOvernight = endTime.hour * 60 + endTime.minute <= startTime.hour * 60 + startTime.minute;
+          const localStart = new CalendarDateTime(
+            d.getUTCFullYear(),
+            d.getUTCMonth() + 1,
+            d.getUTCDate(),
+            startTime.hour,
+            startTime.minute,
+          );
+          const localEnd = localStart
+            .set({ hour: endTime.hour, minute: endTime.minute })
+            .add({ days: isOvernight ? 1 : 0 });
+          const start = localStart.toDate(timeZone);
+          const end = localEnd.toDate(timeZone);
           const title = slot.label?.trim() || rotation.name;
           const user = assignment.user ?? null;
           const users = useUserColors && user
@@ -80,7 +116,7 @@ export async function expandShiftsToEvents(
             description: rotation.name,
             start,
             end,
-            allDay: true,
+            allDay: false,
             color: color ?? eventColor,
             integrationId,
             users,

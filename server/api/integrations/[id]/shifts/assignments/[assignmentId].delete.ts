@@ -10,13 +10,21 @@ export default defineEventHandler(async (event) => {
   if (!integrationId || !assignmentId)
     throw createError({ statusCode: 400, message: "id and assignmentId required" });
   await ensureShiftsIntegration(integrationId);
-  const result = await prisma.shiftAssignment.deleteMany({
-    where: {
-      id: assignmentId,
-      shiftRotation: { integrationId },
-    },
+  await prisma.$transaction(async (tx) => {
+    const assignment = await tx.shiftAssignment.findFirst({
+      where: {
+        id: assignmentId,
+        shiftRotation: { integrationId },
+      },
+    });
+    if (!assignment)
+      throw createError({ statusCode: 404, message: "Assignment not found" });
+    await tx.shiftAssignment.delete({ where: { id: assignment.id } });
+    const remaining = await tx.shiftAssignment.count({
+      where: { shiftRotationId: assignment.shiftRotationId },
+    });
+    if (remaining === 0)
+      await tx.shiftRotation.delete({ where: { id: assignment.shiftRotationId } });
   });
-  if (result.count === 0)
-    throw createError({ statusCode: 404, message: "Assignment not found" });
   return { ok: true };
 });

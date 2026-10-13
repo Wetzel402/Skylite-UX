@@ -9,6 +9,7 @@ import type {
   Integration,
   User,
 } from "~/types/database";
+import type { IntegrationSetupDialog } from "~/types/integrations";
 import type { ConnectionTestResult, FontPreference } from "~/types/ui";
 
 import SettingsIntegrationDialog from "~/components/settings/settingsIntegrationDialog.vue";
@@ -98,6 +99,15 @@ const setupDialogIntegration = ref<Integration | null>(null);
 const setupDialogComponent = shallowRef<Component | null>(null);
 const isSetupDialogOpen = ref(false);
 
+const setupDialogComponents: Record<IntegrationSetupDialog, Component> = {
+  calendarSelect: defineAsyncComponent(
+    () => import("~/components/settings/settingsCalendarSelectDialog.vue"),
+  ),
+  shiftsConfig: defineAsyncComponent(
+    () => import("~/components/settings/settingsShiftsConfigDialog.vue"),
+  ),
+};
+
 const connectionTestResult = ref<ConnectionTestResult>(null);
 
 const route = useRoute();
@@ -134,9 +144,9 @@ watch(
       const config = integrationRegistry.get(
         `${integration.type}:${integration.service}`,
       );
-      if (config?.setupDialogComponent) {
+      if (config?.setupDialog) {
         setupDialogIntegration.value = integration;
-        setupDialogComponent.value = config.setupDialogComponent;
+        setupDialogComponent.value = setupDialogComponents[config.setupDialog];
         isSetupDialogOpen.value = true;
       }
     });

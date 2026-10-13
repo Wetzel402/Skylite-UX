@@ -1,9 +1,36 @@
 import { consola } from "consola";
 
 import type { Integration } from "~/types/database";
+import type { ShiftAssignmentItem, ShiftRotationItem } from "~/types/integrations";
 
 import { integrationServices } from "~/plugins/02.appInit";
 import { createIntegrationService } from "~/types/integrations";
+
+export function generateUniqueName(baseName: string, existingNames: string[]): string {
+  if (!existingNames.includes(baseName))
+    return baseName;
+  let counter = 2;
+  while (existingNames.includes(`${baseName} (${counter})`))
+    counter++;
+  return `${baseName} (${counter})`;
+}
+
+export function useShiftsData(
+  integrationId: string,
+  options: { server?: boolean; lazy?: boolean; immediate?: boolean } = {},
+) {
+  const rotations = useAsyncData(
+    `shifts-rotations-${integrationId}`,
+    () => $fetch<ShiftRotationItem[]>(`/api/integrations/${integrationId}/shifts/rotations`),
+    options,
+  );
+  const assignments = useAsyncData(
+    `shifts-assignments-${integrationId}`,
+    () => $fetch<ShiftAssignmentItem[]>(`/api/integrations/${integrationId}/shifts/assignments`),
+    options,
+  );
+  return { rotations, assignments };
+}
 
 export function useIntegrations() {
   const { data: cachedIntegrations }
@@ -56,18 +83,8 @@ export function useIntegrations() {
       await refreshNuxtData("integrations");
 
       if (response.type === "calendar" && response.service === "shifts") {
-        await Promise.all([
-          useAsyncData(
-            `shifts-rotations-${response.id}`,
-            () => $fetch(`/api/integrations/${response.id}/shifts/rotations`).catch(() => []),
-            { server: false, lazy: false },
-          ),
-          useAsyncData(
-            `shifts-assignments-${response.id}`,
-            () => $fetch(`/api/integrations/${response.id}/shifts/assignments`).catch(() => []),
-            { server: false, lazy: false },
-          ),
-        ]);
+        const { rotations, assignments } = useShiftsData(response.id, { server: false, lazy: false });
+        await Promise.all([rotations, assignments]);
       }
 
       if (response.enabled) {

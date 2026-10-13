@@ -2,7 +2,6 @@
 import { getISOWeek } from "date-fns";
 
 import type { CalendarEvent } from "~/types/calendar";
-import type { Integration } from "~/types/database";
 
 import { useCalendar } from "~/composables/useCalendar";
 import { useStableDate } from "~/composables/useStableDate";
@@ -25,8 +24,6 @@ const emit = defineEmits<{
 
 const { getStableDate, parseStableDate } = useStableDate();
 const { preferences } = useClientPreferences();
-const { integrations } = useIntegrations();
-
 const showWeekNumbers = computed(() => preferences.value?.showWeekNumbers ?? false);
 
 const displayStart = computed(() => {
@@ -51,30 +48,15 @@ const displayEnd = computed(() => {
   return getStableDate();
 });
 
-const isShiftEvent = computed<boolean>(() => {
-  const list = integrations.value;
-  if (!list?.length)
-    return false;
-  const primaryId = props.event.integrationId;
-  if (primaryId && (list as Integration[]).find(i => i.id === primaryId)?.service === "shifts")
-    return true;
-  const sources = props.event.sourceCalendars;
-  if (!sources?.length)
-    return false;
-  for (const sc of sources) {
-    if ((list as Integration[]).find(i => i.id === sc.integrationId)?.service === "shifts")
-      return true;
-  }
-  return false;
-});
+const { getEventColorClasses, isShiftEvent: checkShiftEvent } = useCalendar();
+
+const isShiftEvent = computed<boolean>(() => checkShiftEvent(props.event));
 
 const eventIsoWeek = computed(() => {
   if (!showWeekNumbers.value || !isShiftEvent.value)
     return null;
   return getISOWeek(displayStart.value);
 });
-
-const { getEventColorClasses } = useCalendar();
 
 const eventColorClasses = computed(() => {
   return getEventColorClasses(props.event.color);
@@ -188,7 +170,7 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
       <div class="flex items-center justify-between gap-2 mt-1 min-h-[1.25rem]">
         <div class="text-xs opacity-70">
-          <template v-if="isAllDay && !isShiftEvent">
+          <template v-if="isAllDay">
             All day
           </template>
           <template v-else>
@@ -245,7 +227,7 @@ function handleKeydown(e: KeyboardEvent) {
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">
           <div class="text-xs opacity-70">
-            <template v-if="isAllDay && !isShiftEvent">
+            <template v-if="isAllDay">
               <span>All day</span>
             </template>
             <template v-else>
@@ -311,7 +293,7 @@ function handleKeydown(e: KeyboardEvent) {
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">
           <div class="text-xs opacity-70">
-            <template v-if="isAllDay && !isShiftEvent">
+            <template v-if="isAllDay">
               <span>All day</span>
             </template>
             <template v-else>

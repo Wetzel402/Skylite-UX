@@ -7,6 +7,7 @@ import type {
   IntegrationSettingsField,
 } from "~/types/ui";
 
+import { generateUniqueName } from "~/composables/useIntegrations";
 import { useUsers } from "~/composables/useUsers";
 import { integrationRegistry } from "~/types/integrations";
 import "~/integrations/google_calendar/types";
@@ -248,27 +249,6 @@ function resetForm() {
   initializeSettingsData();
 }
 
-function generateUniqueName(
-  serviceName: string,
-  existingIntegrations: Integration[],
-): string {
-  const baseName = serviceName.charAt(0).toUpperCase() + serviceName.slice(1);
-
-  const existingNames = existingIntegrations.map(
-    integration => integration.name,
-  );
-  if (!existingNames.includes(baseName)) {
-    return baseName;
-  }
-
-  let counter = 2;
-  while (existingNames.includes(`${baseName}${counter}`)) {
-    counter++;
-  }
-
-  return `${baseName}${counter}`;
-}
-
 function getFieldPlaceholder(field: IntegrationSettingsField): string {
   if (props.integration?.id) {
     if (field.key === "apiKey") {
@@ -314,7 +294,10 @@ async function handleSave() {
   try {
     const integrationName
       = name.value.trim()
-        || generateUniqueName(service.value, props.existingIntegrations);
+        || generateUniqueName(
+          service.value.charAt(0).toUpperCase() + service.value.slice(1),
+          props.existingIntegrations.map(integration => integration.name),
+        );
 
     const settings: JsonObject = {};
     for (const field of currentIntegrationConfig.value?.settingsFields ?? []) {
@@ -679,7 +662,7 @@ function handleDelete() {
         </template>
 
         <UButton
-          v-if="integration?.id && currentIntegrationConfig?.setupDialogComponent"
+          v-if="integration?.id && currentIntegrationConfig?.setupDialog"
           color="primary"
           variant="outline"
           icon="i-lucide-settings"

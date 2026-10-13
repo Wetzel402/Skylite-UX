@@ -34,6 +34,7 @@ watch(
       );
     }
   },
+  { immediate: true },
 );
 
 watch(

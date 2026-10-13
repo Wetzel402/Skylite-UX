@@ -2,7 +2,7 @@ import { getRouterParam, readBody } from "h3";
 
 import prisma from "~/lib/prisma";
 
-import { ensureShiftsIntegration } from "../../../../../../../utils/shiftsIntegration";
+import { ensureShiftsIntegration, validateShiftSlotUpdate } from "../../../../../../../utils/shiftsIntegration";
 
 export default defineEventHandler(async (event) => {
   const integrationId = getRouterParam(event, "id");
@@ -17,25 +17,9 @@ export default defineEventHandler(async (event) => {
   if (!rotation)
     throw createError({ statusCode: 404, message: "Rotation not found" });
   const body = await readBody(event);
-  const { weekIndex, dayOfWeek, startTime, endTime, label, color, order } = body;
-  const updateData: Record<string, unknown> = {};
-  if (typeof weekIndex === "number" && weekIndex >= 0)
-    updateData.weekIndex = weekIndex;
-  if (typeof dayOfWeek === "number" && dayOfWeek >= 0 && dayOfWeek <= 6)
-    updateData.dayOfWeek = dayOfWeek;
-  if (typeof startTime === "string")
-    updateData.startTime = startTime.trim();
-  if (typeof endTime === "string")
-    updateData.endTime = endTime.trim();
-  if (label !== undefined)
-    updateData.label = typeof label === "string" ? (label.trim() || null) : null;
-  if (color !== undefined)
-    updateData.color = typeof color === "string" ? (color.trim() || null) : null;
-  if (typeof order === "number")
-    updateData.order = order;
   const result = await prisma.shiftSlot.updateMany({
     where: { id: slotId, shiftRotationId: rotationId },
-    data: updateData,
+    data: validateShiftSlotUpdate(body, rotation.cycleDays),
   });
   if (result.count === 0)
     throw createError({ statusCode: 404, message: "Slot not found" });

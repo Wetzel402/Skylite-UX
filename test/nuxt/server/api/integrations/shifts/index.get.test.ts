@@ -75,9 +75,9 @@ describe("GET /api/integrations/shifts", () => {
           id: "shift-1",
           title: "Shift A",
           description: "Rotation",
-          start: new Date("2025-06-01T00:00:00.000Z"),
+          start: new Date("2025-06-01T12:00:00.000Z"),
           end: new Date("2025-06-02T00:00:00.000Z"),
-          allDay: true,
+          allDay: false,
           color: "#06b6d4",
           integrationId: "int-shifts-1",
         },
@@ -101,7 +101,13 @@ describe("GET /api/integrations/shifts", () => {
           enabled: true,
         },
       });
-      expect(mockExpandShiftsToEvents).toHaveBeenCalled();
+      expect(mockExpandShiftsToEvents).toHaveBeenCalledWith(
+        "int-shifts-1",
+        {},
+        expect.any(Date),
+        expect.any(Date),
+        useRuntimeConfig().public.tz,
+      );
       expect(response).toEqual({ events: mockEvents });
     });
   });

@@ -93,7 +93,7 @@ The Google Calendar integration provides full two-way synchronization with your 
 
 ## Shifts
 
-The Shifts integration allows you to define shift rotations (e.g. 2-2-2, 4-on-3-off) with a cycle length and slots per week/day. Shift events then appear on the main calendar like other calendar integrations allowing you to see your shifts at a glance.
+The Shifts integration allows you to define repeating shift patterns (e.g. 2-2-2, 4 on 3 off, DuPont). A pattern is a sequence of shift and off days that repeats every N days, where N is the total length of the pattern. It does not need to be a whole number of weeks. Shift events then appear on the main calendar like other calendar integrations, allowing you to see your shifts at a glance.
 
 ### Capabilities
 
@@ -101,6 +101,39 @@ The Shifts integration allows you to define shift rotations (e.g. 2-2-2, 4-on-3-
 
 ### Setup Instructions
 
-1. Follow the [general setup instructions](#general-setup) above. Note: Shifts does not accept event/user color. Colors are defined per configured shift slot.
-2. After saving the shift dialog should open to set up your rotations:
-   - Create one or more **rotations** using predefined patterns or a custom one.
+1. Follow the [general setup instructions](#general-setup) above. Note: Shifts does not accept event/user color. Colors are defined per shift in the pattern.
+2. After saving, the **Configure Shifts** dialog opens. You can reopen it any time from **Settings > Integrations** by editing the integration and choosing **Configure Shifts**.
+3. Choose a pattern from **Patterns**, then fill in the form:
+   - **Starts**: The first day of the pattern. Pick the date your first shift (or first day of the cycle) falls on.
+   - **Shifts**: The segments that make up the pattern, in order. Each segment has a number of days and, for working segments, a shift type and color. The dialog shows how many days the pattern repeats over.
+   - **Pattern name** (optional): A name is generated from the pattern if left blank.
+   - **End date** (optional): Leave blank for a pattern that continues indefinitely.
+4. Click **Save**. The shifts appear on the calendar after the next sync.
+
+### Patterns
+
+| Pattern | Default segments | Repeats every |
+|---|---|---|
+| 2-2-2 | 2 Early, 2 Late, 2 Nights, 2 off | 8 days |
+| 4 on 3 off | 4 Day, 3 off | 7 days |
+| Continental 2-2-3 | 2 Days, 2 off, 2 Nights, 1 Midday | 7 days |
+| Days/Nights/Off | 4 Days, 4 off, 4 Nights, 4 off | 16 days |
+| DuPont | 4 Nights, 3 off, 3 Days, 1 off, 3 Nights, 3 off, 4 Days, 7 off | 28 days |
+| Nights only | 4 Nights, 4 off | 8 days |
+| On/Off | 4 Day, 4 off | 8 days |
+| Custom | Build your own with **Add shift** and **Add off** | Total of all segments |
+
+Every pattern's day counts, shift types and colors can be changed before saving. For example, change On/Off to 7 on and 7 off for a 14-day pattern.
+
+### Shift types and times
+
+Each working segment uses a shift type such as Early (5am–1pm), Day (7am–7pm), Days (9am–5pm), Late (12pm–8pm), Nights (7pm–5am) or Graveyard (11pm–7am). Choose **Custom** to set your own start and end time for a segment.
+
+Shifts appear as timed events on the calendar. A shift whose end time is earlier than its start time, such as a 7pm–7am night shift, ends the next morning. Times are in the app's timezone, set by `NUXT_PUBLIC_TZ` (see [Docker installation]({{ '/installation/docker/' | relative_url }})). A shift keeps its local start and end times across daylight saving changes.
+
+### Editing and deleting
+
+Configured shifts are listed under **Configured shifts** in the dialog.
+
+- **Edit**: Change the pattern name, start date, end date and the color of each shift type. To change the segments themselves, delete the shift and add it again.
+- **Delete**: Removes the shift and its pattern. Its events disappear from the calendar after the next sync.

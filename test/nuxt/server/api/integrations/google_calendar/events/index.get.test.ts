@@ -109,7 +109,12 @@ describe("gET /api/integrations/google_calendar/events", () => {
       });
 
       expect(mockService.fetchEvents).toHaveBeenCalledWith(["cal-1"]);
-      expect(expandRecurringEvents).toHaveBeenCalled();
+      expect(expandRecurringEvents).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(Date),
+        expect.any(Date),
+        "America/Chicago",
+      );
       expect(response).toHaveProperty("events");
       expect(response).toHaveProperty("calendars");
     });

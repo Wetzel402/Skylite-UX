@@ -33,7 +33,7 @@ describe("GET /api/integrations/[id]/shifts/rotations", () => {
           id: "rot-1",
           integrationId: "int-1",
           name: "Weekend",
-          cycleWeeks: 1,
+          cycleDays: 7,
           color: null,
           order: 0,
           createdAt: new Date(),

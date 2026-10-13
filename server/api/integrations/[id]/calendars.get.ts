@@ -1,12 +1,10 @@
-import { PrismaClient } from "@prisma/client";
 import { consola } from "consola";
 import { createError, defineEventHandler, getRouterParam } from "h3";
 
+import prisma from "~/lib/prisma";
 import { isGoogleApiError } from "~/types/errors";
 
 import { GoogleCalendarServerService } from "../../../integrations/google_calendar/client";
-
-const prisma = new PrismaClient();
 
 export default defineEventHandler(async (event) => {
   const integrationId = getRouterParam(event, "id");

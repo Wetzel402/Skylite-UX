@@ -1,5 +1,3 @@
-import { defineAsyncComponent } from "vue";
-
 import type { ShoppingListItem, TodoListItem } from "~/types/database";
 import type {
   GoogleCalendarSettings,
@@ -108,11 +106,7 @@ export const integrationConfigs: IntegrationConfig[] = [
     icon: "https://unpkg.com/lucide-static@latest/icons/calendar.svg",
     dialogFields: [],
     syncInterval: 10,
-    setupDialogComponent: import.meta.client
-      ? defineAsyncComponent(
-          () => import("~/components/settings/settingsCalendarSelectDialog.vue"),
-        )
-      : undefined,
+    setupDialog: "calendarSelect",
     setupDialogLabel: "Select Calendars",
   },
   {
@@ -133,11 +127,7 @@ export const integrationConfigs: IntegrationConfig[] = [
     icon: "https://unpkg.com/lucide-static@latest/icons/calendar-clock.svg",
     dialogFields: [],
     syncInterval: 10,
-    setupDialogComponent: import.meta.client
-      ? defineAsyncComponent(
-          () => import("~/components/settings/settingsShiftsConfigDialog.vue"),
-        )
-      : undefined,
+    setupDialog: "shiftsConfig",
     setupDialogLabel: "Configure Shifts",
   },
   // ================================================
