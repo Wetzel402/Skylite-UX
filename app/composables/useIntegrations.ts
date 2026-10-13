@@ -55,6 +55,21 @@ export function useIntegrations() {
 
       await refreshNuxtData("integrations");
 
+      if (response.type === "calendar" && response.service === "shifts") {
+        await Promise.all([
+          useAsyncData(
+            `shifts-rotations-${response.id}`,
+            () => $fetch(`/api/integrations/${response.id}/shifts/rotations`).catch(() => []),
+            { server: false, lazy: false },
+          ),
+          useAsyncData(
+            `shifts-assignments-${response.id}`,
+            () => $fetch(`/api/integrations/${response.id}/shifts/assignments`).catch(() => []),
+            { server: false, lazy: false },
+          ),
+        ]);
+      }
+
       if (response.enabled) {
         const service = await createIntegrationService(response);
         if (service) {

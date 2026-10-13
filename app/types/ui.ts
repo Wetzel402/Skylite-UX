@@ -126,6 +126,7 @@ export type ClientPreferences = {
   font?: FontPreference;
   defaultView?: string;
   calendarView?: CalendarView;
+  showWeekNumbers?: boolean;
 };
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
@@ -141,6 +142,7 @@ export const defaultClientPreferences: ClientPreferences = {
   font: "system",
   defaultView: "/calendar",
   calendarView: "week",
+  showWeekNumbers: false,
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [
