@@ -23,4 +23,4 @@ Add, edit, check off, or delete items. You can set an optional due date, priorit
 
 ## Sort
 
-The sort order (by date, priority, or A–Z) can be set in [Settings]({{ '/usage/settings/' | relative_url }}) under client preferences.
+The sort order (by date, priority, or A–Z) can be set from the Todo Lists page.

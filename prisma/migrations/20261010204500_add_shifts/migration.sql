@@ -49,7 +49,7 @@ ALTER TABLE "shift_rotations" ADD CONSTRAINT "shift_rotations_integrationId_fkey
 ALTER TABLE "shift_slots" ADD CONSTRAINT "shift_slots_shiftRotationId_fkey" FOREIGN KEY ("shiftRotationId") REFERENCES "shift_rotations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "shift_assignments" ADD CONSTRAINT "shift_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "shift_assignments" ADD CONSTRAINT "shift_assignments_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "shift_assignments" ADD CONSTRAINT "shift_assignments_shiftRotationId_fkey" FOREIGN KEY ("shiftRotationId") REFERENCES "shift_rotations"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -626,7 +626,7 @@ export function useCalendar() {
 
   function getCombinedEventColors(event: CalendarEvent): string | string[] {
     const hasMultipleSources = (event.sourceCalendars?.length ?? 0) > 1;
-    if (!hasMultipleSources && event.color !== undefined && event.color !== null) {
+    if (!hasMultipleSources && isShiftEvent(event) && event.color !== undefined && event.color !== null) {
       if (Array.isArray(event.color))
         return event.color;
       if (typeof event.color === "string")

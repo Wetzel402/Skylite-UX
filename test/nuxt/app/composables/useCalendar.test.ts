@@ -557,7 +557,7 @@ describe("useCalendar", () => {
       expect(result[0]!.color).toEqual(["#111", "#bbb"]);
     });
 
-    it("keeps a single-source event's own color", () => {
+    it("uses the source color for a single-source non-shift event", () => {
       const { combineEvents } = useCalendar();
       const result = combineEvents([
         birthdayEvent({
@@ -567,7 +567,29 @@ describe("useCalendar", () => {
       ]);
 
       expect(result).toHaveLength(1);
-      expect(result[0]!.color).toBe("#123456");
+      expect(result[0]!.color).toBe("#06b6d4");
+    });
+
+    it("keeps a single-source shift event's own color", () => {
+      useNuxtData("integrations").data.value = [
+        { id: "int-shifts", type: "calendar", service: "shifts" },
+      ];
+      try {
+        const { combineEvents } = useCalendar();
+        const result = combineEvents([
+          birthdayEvent({
+            color: "#123456",
+            integrationId: "int-shifts",
+            sourceCalendars: [{ integrationId: "int-shifts", calendarId: "c1", accessRole: "read", canEdit: false, eventColor: "#06b6d4" }],
+          }),
+        ]);
+
+        expect(result).toHaveLength(1);
+        expect(result[0]!.color).toBe("#123456");
+      }
+      finally {
+        useNuxtData("integrations").data.value = undefined;
+      }
     });
 
     it("merges events whose title, location and description differ only in case", () => {

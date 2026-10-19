@@ -27,6 +27,8 @@ const emit = defineEmits<{
   (e: "openSetup", integrationId: string): void;
 }>();
 
+const INTEGRATION_COLUMN_FIELDS = ["apiKey", "baseUrl"];
+
 const show = ref(false);
 
 const name = ref("");
@@ -299,8 +301,14 @@ async function handleSave() {
           props.existingIntegrations.map(integration => integration.name),
         );
 
-    const settings: JsonObject = {};
+    const settings: JsonObject = {
+      ...((props.integration?.settings as JsonObject | undefined) ?? {}),
+    };
+    for (const key of INTEGRATION_COLUMN_FIELDS)
+      delete settings[key];
     for (const field of currentIntegrationConfig.value?.settingsFields ?? []) {
+      if (INTEGRATION_COLUMN_FIELDS.includes(field.key))
+        continue;
       const v = settingsData.value[field.key];
       if (field.type === "color")
         settings[field.key] = (v as string) || (field.placeholder as string) || "#06b6d4";
@@ -310,13 +318,6 @@ async function handleSave() {
         settings[field.key] = (Array.isArray(v) ? v : []) as JsonValue;
       else
         settings[field.key] = (typeof v === "string" ? v : (field.placeholder as string) ?? "") as string;
-    }
-    if (
-      props.integration?.id
-      && currentIntegrationConfig.value?.capabilities.includes("select_calendars")
-      && !settingsData.value.clientSecret
-    ) {
-      settings.calendars = ((props.integration.settings as { calendars?: unknown })?.calendars as JsonValue) || [];
     }
 
     const integrationData: CreateIntegrationInput = {
