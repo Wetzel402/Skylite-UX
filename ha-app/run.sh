@@ -45,24 +45,30 @@ if [ "$database" = "bundled" ]; then
   fi
   SKYLITE_PW="$(cat "$PWFILE")"
 
+  wait_for_postgres() {
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+      if gosu postgres pg_isready -q; then return 0; fi
+      sleep 1
+    done
+    echo "Error: bundled PostgreSQL did not start. Last log lines:" >&2
+    tail -n 20 "${PGDATA}/logfile" >&2 || true
+    exit 1
+  }
+
   if [ ! -d "$PGDATA" ] || [ ! -f "$PGDATA/PG_VERSION" ]; then
     mkdir -p "$PGDATA"
     chown postgres:postgres "$PGDATA"
-    gosu postgres initdb -D $PGDATA --locale=C.UTF-8
-    gosu postgres pg_ctl -D $PGDATA -l ${PGDATA}/logfile start || true
+    gosu postgres initdb -D "$PGDATA" --locale=C.UTF-8
+    gosu postgres pg_ctl -D "$PGDATA" -l "${PGDATA}/logfile" start || true
     sleep 2
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
-      if gosu postgres pg_isready -D $PGDATA 2>/dev/null; then break; fi
-      sleep 1
-    done
+    wait_for_postgres
     gosu postgres psql -d postgres -c "CREATE USER skylite WITH PASSWORD '$SKYLITE_PW';"
     gosu postgres psql -d postgres -c "CREATE DATABASE skylite OWNER skylite;"
   else
-    gosu postgres pg_ctl -D $PGDATA -l ${PGDATA}/logfile start || true
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
-      if gosu postgres pg_isready -D $PGDATA 2>/dev/null; then break; fi
-      sleep 1
-    done
+    chown -R postgres:postgres "$PGDATA"
+    chmod 700 "$PGDATA"
+    gosu postgres pg_ctl -D "$PGDATA" -l "${PGDATA}/logfile" start || true
+    wait_for_postgres
   fi
 
   export DATABASE_URL="postgresql://skylite:${SKYLITE_PW}@localhost:5432/skylite"
