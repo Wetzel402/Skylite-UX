@@ -12,6 +12,7 @@ import {
   createMealieService,
   getMealieFieldsForItem,
 } from "./mealie/mealieShoppingLists";
+import { createShiftsService } from "./shifts/shifts";
 import {
   createTandoorService,
   getTandoorFieldsForItem,
@@ -105,6 +106,29 @@ export const integrationConfigs: IntegrationConfig[] = [
     icon: "https://unpkg.com/lucide-static@latest/icons/calendar.svg",
     dialogFields: [],
     syncInterval: 10,
+    setupDialog: "calendarSelect",
+    setupDialogLabel: "Select Calendars",
+  },
+  {
+    type: "calendar",
+    service: "shifts",
+    settingsFields: [
+      {
+        key: "user",
+        label: "User",
+        type: "text" as const,
+        placeholder: "Jane Doe",
+        required: false,
+        description:
+          "Select user(s) to link to shift events",
+      },
+    ],
+    capabilities: ["get_events"],
+    icon: "https://unpkg.com/lucide-static@latest/icons/calendar-clock.svg",
+    dialogFields: [],
+    syncInterval: 10,
+    setupDialog: "shiftsConfig",
+    setupDialogLabel: "Configure Shifts",
   },
   // ================================================
   // Meal integration configs can support the following list-level capabilities:
@@ -256,6 +280,12 @@ const serviceFactoryMap = {
       googleSettings?.clientSecret || "",
     );
   },
+  "calendar:shifts": (
+    _id: string,
+    _apiKey: string,
+    _baseUrl: string,
+    settings?: ICalSettings | GoogleCalendarSettings,
+  ) => createShiftsService(_id, _apiKey, _baseUrl, settings as ICalSettings),
   "shopping:mealie": createMealieService,
   "shopping:tandoor": createTandoorService,
 } as const;

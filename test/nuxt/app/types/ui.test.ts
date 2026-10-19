@@ -1,33 +1,14 @@
-import ical from "ical.js";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { getDueRangeCutoff, getPriorityColor, isTodoWithinDueRange } from "~/types/ui";
-
-const FIXED_OFFSET_TZID = "Test/FixedOffset";
+import { getDueRangeCutoff, getPriorityColor, isTodoWithinDueRange, isValidTimezone } from "~/types/ui";
 
 // A timezone with a fixed +05:30 offset and no DST, so cutoffs computed
 // against it can be asserted with plain arithmetic instead of depending on
 // the host machine's local timezone.
-const FIXED_OFFSET_VTIMEZONE = [
-  "BEGIN:VTIMEZONE",
-  `TZID:${FIXED_OFFSET_TZID}`,
-  "BEGIN:STANDARD",
-  "DTSTART:19700101T000000",
-  "TZOFFSETFROM:+0530",
-  "TZOFFSETTO:+0530",
-  "TZNAME:TST",
-  "END:STANDARD",
-  "END:VTIMEZONE",
-].join("\r\n");
+const FIXED_OFFSET_TZID = "Asia/Kolkata";
 
 describe("getDueRangeCutoff", () => {
   const now = new Date("2026-08-19T12:00:00Z"); // a Wednesday, late enough in the month that week and month cutoffs diverge
-
-  beforeAll(() => {
-    const component = new ical.Component(ical.parse(FIXED_OFFSET_VTIMEZONE));
-    const timezone = new ical.Timezone({ component, tzid: FIXED_OFFSET_TZID });
-    ical.TimezoneService.register(timezone);
-  });
 
   it("returns null for 'all'", () => {
     expect(getDueRangeCutoff("all", now, "UTC")).toBeNull();
@@ -83,6 +64,20 @@ describe("getDueRangeCutoff", () => {
     expect(getDueRangeCutoff("day", now, "Not/Registered")).toEqual(
       new Date("2026-08-19T23:59:59.999Z"),
     );
+  });
+
+  it("uses daylight time before the fall-back instant in America/Chicago", () => {
+    expect(getDueRangeCutoff("day", new Date("2026-11-01T04:00:00Z"), "America/Chicago")).toEqual(
+      new Date("2026-11-01T04:59:59.999Z"),
+    );
+    expect(getDueRangeCutoff("day", new Date("2026-11-01T05:00:00Z"), "America/Chicago")).toEqual(
+      new Date("2026-11-02T05:59:59.999Z"),
+    );
+  });
+
+  it("validates IANA timezone names", () => {
+    expect(isValidTimezone("America/Chicago")).toBe(true);
+    expect(isValidTimezone("Not/AZone")).toBe(false);
   });
 
   it("produces the same cutoff regardless of how many times it is evaluated for the same inputs (SSR and client parity)", () => {

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { mockNuxtImport } from "@nuxt/test-utils/runtime";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mockNuxtImport, registerEndpoint } from "@nuxt/test-utils/runtime";
+import { createError } from "h3";
 
 import type { Integration } from "~/types/database";
 
@@ -74,7 +75,7 @@ mockNuxtImport("useSyncManager", () => () => ({
   triggerImmediateSync: mockTriggerImmediateSync,
 }));
 
-import { useIntegrations } from "../../../../app/composables/useIntegrations";
+import { generateUniqueName, useIntegrations, useShiftsData } from "../../../../app/composables/useIntegrations";
 
 describe("useIntegrations", () => {
   const mockIntegrations: Integration[] = [
@@ -287,5 +288,74 @@ describe("useIntegrations", () => {
       await reinitializeIntegration("non-existent");
       expect(mockCreateIntegrationService).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("useShiftsData", () => {
+  const cleanups: (() => void)[] = [];
+
+  afterEach(() => {
+    cleanups.splice(0).forEach(cleanup => cleanup());
+    clearNuxtData();
+  });
+
+  it("loads rotations and assignments for the integration", async () => {
+    cleanups.push(
+      registerEndpoint("/api/integrations/int-shifts/shifts/rotations", () => [{ id: "rot-1" }]),
+      registerEndpoint("/api/integrations/int-shifts/shifts/assignments", () => [{ id: "asg-1" }]),
+    );
+
+    const { rotations, assignments } = useShiftsData("int-shifts", { server: false });
+    await Promise.all([rotations, assignments]);
+
+    expect(rotations.data.value).toEqual([{ id: "rot-1" }]);
+    expect(assignments.data.value).toEqual([{ id: "asg-1" }]);
+  });
+
+  it("does not fetch when immediate is false", async () => {
+    const handler = vi.fn(() => []);
+    cleanups.push(
+      registerEndpoint("/api/integrations/int-idle/shifts/rotations", handler),
+      registerEndpoint("/api/integrations/int-idle/shifts/assignments", handler),
+    );
+
+    const { rotations } = useShiftsData("int-idle", { server: false, immediate: false });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(rotations.data.value).toBeUndefined();
+  });
+
+  it("exposes fetch failures through error", async () => {
+    cleanups.push(
+      registerEndpoint("/api/integrations/int-bad/shifts/rotations", () => {
+        throw createError({ statusCode: 500, statusMessage: "boom" });
+      }),
+      registerEndpoint("/api/integrations/int-bad/shifts/assignments", () => []),
+    );
+
+    const { rotations, assignments } = useShiftsData("int-bad", { server: false });
+    await Promise.all([rotations, assignments]);
+
+    expect(rotations.error.value).toBeTruthy();
+    expect(assignments.error.value).toBeFalsy();
+  });
+});
+
+describe("generateUniqueName", () => {
+  it("returns the base name when it is free", () => {
+    expect(generateUniqueName("iCal", ["Google"])).toBe("iCal");
+  });
+
+  it("appends (2) when the base name is taken", () => {
+    expect(generateUniqueName("2-2-2", ["2-2-2"])).toBe("2-2-2 (2)");
+  });
+
+  it("fills the first gap", () => {
+    expect(generateUniqueName("X", ["X", "X (3)"])).toBe("X (2)");
+  });
+
+  it("skips existing numbered duplicates", () => {
+    expect(generateUniqueName("X", ["X", "X (2)", "X (3)"])).toBe("X (4)");
   });
 });

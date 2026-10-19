@@ -160,7 +160,12 @@ export default defineEventHandler(async (event) => {
     const now = new Date();
     const startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     const endDate = new Date(now.getFullYear() + 2, now.getMonth(), now.getDate());
-    const expandedEvents = expandRecurringEvents(calendarEvents, startDate, endDate);
+    const expandedEvents = expandRecurringEvents(
+      calendarEvents,
+      startDate,
+      endDate,
+      useRuntimeConfig().public.tz,
+    );
 
     return { events: expandedEvents, calendars: settings.calendars || [] };
   }

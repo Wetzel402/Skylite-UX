@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getISOWeek } from "date-fns";
+
 import type { CalendarEvent } from "~/types/calendar";
 
 import { useCalendar } from "~/composables/useCalendar";
@@ -21,6 +23,8 @@ const emit = defineEmits<{
 }>();
 
 const { getStableDate, parseStableDate } = useStableDate();
+const { preferences } = useClientPreferences();
+const showWeekNumbers = computed(() => preferences.value?.showWeekNumbers ?? false);
 
 const displayStart = computed(() => {
   if (props.event.start instanceof Date) {
@@ -44,7 +48,15 @@ const displayEnd = computed(() => {
   return getStableDate();
 });
 
-const { getEventColorClasses } = useCalendar();
+const { getEventColorClasses, isShiftEvent: checkShiftEvent } = useCalendar();
+
+const isShiftEvent = computed<boolean>(() => checkShiftEvent(props.event));
+
+const eventIsoWeek = computed(() => {
+  if (!showWeekNumbers.value || !isShiftEvent.value)
+    return null;
+  return getISOWeek(displayStart.value);
+});
 
 const eventColorClasses = computed(() => {
   return getEventColorClasses(props.event.color);
@@ -136,15 +148,25 @@ function handleKeydown(e: KeyboardEvent) {
     @keydown="handleKeydown"
   >
     <div v-show="view === 'month'">
-      <div class="flex items-center justify-between">
-        <span class="truncate flex-1">
-          {{ event.title }}
-        </span>
+      <div class="flex items-center justify-between min-w-0">
+        <div class="flex items-center gap-1 min-w-0 flex-1">
+          <span class="truncate flex-1">
+            {{ event.title }}
+          </span>
+          <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+            Week {{ eventIsoWeek }}
+          </span>
+        </div>
       </div>
     </div>
     <div v-show="view === 'week'">
-      <div class="font-medium text-sm truncate">
-        {{ event.title }}
+      <div class="font-medium text-sm flex items-center gap-1 min-w-0">
+        <span class="truncate flex-1">
+          {{ event.title }}
+        </span>
+        <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          Week {{ eventIsoWeek }}
+        </span>
       </div>
       <div class="flex items-center justify-between gap-2 mt-1 min-h-[1.25rem]">
         <div class="text-xs opacity-70">
@@ -194,8 +216,13 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
     </div>
     <div v-show="view === 'day'">
-      <div class="text-sm font-medium">
-        {{ event.title }}
+      <div class="text-sm font-medium flex items-center gap-1 min-w-0">
+        <span class="truncate flex-1">
+          {{ event.title }}
+        </span>
+        <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          Week {{ eventIsoWeek }}
+        </span>
       </div>
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">
@@ -255,8 +282,13 @@ function handleKeydown(e: KeyboardEvent) {
       </div>
     </div>
     <div v-show="view === 'agenda'">
-      <div class="text-sm font-medium">
-        {{ event.title }}
+      <div class="text-sm font-medium flex items-center gap-1 min-w-0">
+        <span class="truncate flex-1">
+          {{ event.title }}
+        </span>
+        <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          Week {{ eventIsoWeek }}
+        </span>
       </div>
       <div class="flex items-end justify-between mt-1">
         <div class="flex-1">

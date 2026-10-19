@@ -22,6 +22,7 @@ import {
   createIntegrationService,
   registerIntegration,
 } from "~/types/integrations";
+import { isValidTimezone } from "~/types/ui";
 
 type ICalDesign = {
   design?: {
@@ -43,50 +44,20 @@ export default defineNuxtPlugin(async () => {
   const config = useRuntimeConfig();
   const browserTimezone = config.public.tz;
 
-  try {
-    const apiUrl = `https://tz.add-to-calendar-technology.com/api/${browserTimezone}.ics`;
-    const { data: vtimezoneBlock, error } = await useFetch(apiUrl, {
-      key: `timezone-${browserTimezone}`,
-      server: true,
-      default: () => null,
-    });
-
-    if (error.value) {
-      throw new Error(
-        `Failed to fetch timezone data: ${error.value.statusCode || "Unknown error"}`,
-      );
-    }
-
-    if (!vtimezoneBlock.value) {
-      throw new Error("No timezone data received");
-    }
-
-    const timezoneComponent = new ical.Component(
-      ical.parse(vtimezoneBlock.value as string),
-    );
-    const timezone = new ical.Timezone({
-      tzid: browserTimezone,
-      component: timezoneComponent,
-    });
-
-    ical.TimezoneService.register(timezone);
+  if (browserTimezone && isValidTimezone(browserTimezone)) {
     consola.debug(
-      "AppInit: Successfully registered timezone:",
+      "AppInit: Using timezone:",
       browserTimezone,
       "on",
       import.meta.server ? "server" : "client",
     );
-
     setTimezoneRegistered(true);
     setBrowserTimezone(browserTimezone);
   }
-  catch (error) {
-    const apiUrl = `https://tz.add-to-calendar-technology.com/api/${browserTimezone}.ics`;
+  else {
     consola.warn(
-      "AppInit: Failed to register timezone, calendar will use fallback. URL:",
-      apiUrl,
-      "Error:",
-      error,
+      "AppInit: Invalid timezone, calendar will use UTC:",
+      browserTimezone,
     );
     setTimezoneRegistered(false);
   }
@@ -220,6 +191,10 @@ export default defineNuxtPlugin(async () => {
                 },
               ),
             );
+            if (integration.service === "shifts") {
+              const { rotations, assignments } = useShiftsData(integration.id, { server: true, lazy: false });
+              integrationDataPromises.push(rotations, assignments);
+            }
           }
           else if (integration.type === "shopping") {
             integrationDataPromises.push(

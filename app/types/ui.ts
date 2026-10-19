@@ -1,5 +1,5 @@
+import { CalendarDateTime, fromDate } from "@internationalized/date";
 import { endOfDay, endOfMonth, endOfWeek } from "date-fns";
-import ical from "ical.js";
 
 import type { CalendarView } from "~/types/calendar";
 import type { Priority, ShoppingList, TodoList } from "~/types/database";
@@ -126,6 +126,7 @@ export type ClientPreferences = {
   font?: FontPreference;
   defaultView?: string;
   calendarView?: CalendarView;
+  showWeekNumbers?: boolean;
 };
 
 export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
@@ -141,6 +142,7 @@ export const defaultClientPreferences: ClientPreferences = {
   font: "system",
   defaultView: "/calendar",
   calendarView: "week",
+  showWeekNumbers: false,
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [
@@ -164,9 +166,9 @@ export function getDueRangeCutoff(
   if (range === "all")
     return null;
 
-  const zone = ical.TimezoneService.get(timezone) ?? ical.TimezoneService.get("UTC")!;
+  const zone = isValidTimezone(timezone) ? timezone : "UTC";
 
-  const nowInZone = ical.Time.fromJSDate(now, true).convertToZone(zone);
+  const nowInZone = fromDate(now, zone);
   const wallClockNow = new Date(
     nowInZone.year,
     nowInZone.month - 1,
@@ -184,20 +186,24 @@ export function getDueRangeCutoff(
   else
     wallClockCutoff = endOfMonth(wallClockNow);
 
-  const cutoffInstant = ical.Time.fromData(
-    {
-      year: wallClockCutoff.getFullYear(),
-      month: wallClockCutoff.getMonth() + 1,
-      day: wallClockCutoff.getDate(),
-      hour: wallClockCutoff.getHours(),
-      minute: wallClockCutoff.getMinutes(),
-      second: wallClockCutoff.getSeconds(),
-    },
-    zone,
-  ).toJSDate();
+  return new CalendarDateTime(
+    wallClockCutoff.getFullYear(),
+    wallClockCutoff.getMonth() + 1,
+    wallClockCutoff.getDate(),
+    wallClockCutoff.getHours(),
+    wallClockCutoff.getMinutes(),
+    wallClockCutoff.getSeconds(),
+    wallClockCutoff.getMilliseconds(),
+  ).toDate(zone);
+}
 
-  cutoffInstant.setMilliseconds(wallClockCutoff.getMilliseconds());
-  return cutoffInstant;
+export function isValidTimezone(timezone: string): boolean {
+  try {
+    return Intl.DateTimeFormat("en-US", { timeZone: timezone }).resolvedOptions().timeZone.length > 0;
+  }
+  catch {
+    return false;
+  }
 }
 
 export function isTodoWithinDueRange(

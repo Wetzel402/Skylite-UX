@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    maxWorkers: 4,
     coverage: {
       include: ["app/**", "server/**"],
       exclude: [
@@ -63,6 +64,7 @@ export default defineConfig({
           testTimeout: 60_000,
           hookTimeout: 180_000,
           pool: "forks",
+          fileParallelism: false,
           globalSetup: ["./test/e2e/globalSetup.ts"],
           setupFiles: ["./test/e2e/setup.ts"],
         },

@@ -1,8 +1,14 @@
-import type { DateValue } from "@internationalized/date";
+import type { DateValue, ZonedDateTime } from "@internationalized/date";
 
+import { fromDate, toCalendarDate } from "@internationalized/date";
 import { consola } from "consola";
-import { format } from "date-fns";
-import ical from "ical.js";
+import {
+  addDays,
+  differenceInCalendarDays,
+  endOfWeek,
+  format,
+  startOfWeek,
+} from "date-fns";
 
 import type {
   CalendarEvent,
@@ -64,8 +70,14 @@ export function useCalendar() {
     return getUtcMidnightTime(a) === getUtcMidnightTime(b);
   }
 
-  function createICalTime(date: Date, isUTC: boolean = false): ical.Time {
-    return ical.Time.fromJSDate(date, isUTC);
+  function toZoned(date: Date): ZonedDateTime {
+    try {
+      return fromDate(date, getSafeTimezone());
+    }
+    catch (error) {
+      consola.debug("Use Calendar: timezone conversion failed, using UTC:", error);
+      return fromDate(date, "UTC");
+    }
   }
 
   function isSameLocalDay(
@@ -76,34 +88,7 @@ export function useCalendar() {
     if (isAllDay) {
       return isSameUtcDay(a, b);
     }
-
-    try {
-      const browserTimezone = getSafeTimezone();
-      const timezone = ical.TimezoneService.get(browserTimezone);
-
-      if (!timezone) {
-        return isSameUtcDay(a, b);
-      }
-
-      const timeA = createICalTime(a, true);
-      const timeB = createICalTime(b, true);
-
-      const localA = timeA.convertToZone(timezone);
-      const localB = timeB.convertToZone(timezone);
-
-      return (
-        localA.year === localB.year
-        && localA.month === localB.month
-        && localA.day === localB.day
-      );
-    }
-    catch (error) {
-      consola.debug(
-        "Use Calendar: ical.js comparison failed, using UTC fallback:",
-        error,
-      );
-      return isSameUtcDay(a, b);
-    }
+    return toCalendarDate(toZoned(a)).compare(toCalendarDate(toZoned(b))) === 0;
   }
 
   function isLocalDayInRange(
@@ -115,53 +100,11 @@ export function useCalendar() {
     if (isAllDay) {
       return day.getTime() >= start.getTime() && day.getTime() < end.getTime();
     }
-
-    try {
-      const browserTimezone = getSafeTimezone();
-      const timezone = ical.TimezoneService.get(browserTimezone);
-
-      if (!timezone) {
-        return (
-          day.getTime() >= start.getTime() && day.getTime() < end.getTime()
-        );
-      }
-
-      const timeDay = createICalTime(day, true);
-      const timeStart = createICalTime(start, true);
-      const timeEnd = createICalTime(end, true);
-
-      const localDay = timeDay.convertToZone(timezone);
-      const localStart = timeStart.convertToZone(timezone);
-      const localEnd = timeEnd.convertToZone(timezone);
-
-      const dayMidnight = new Date(
-        localDay.year,
-        localDay.month - 1,
-        localDay.day,
-      );
-      const startMidnight = new Date(
-        localStart.year,
-        localStart.month - 1,
-        localStart.day,
-      );
-      const endMidnight = new Date(
-        localEnd.year,
-        localEnd.month - 1,
-        localEnd.day,
-      );
-
-      return (
-        dayMidnight.getTime() >= startMidnight.getTime()
-        && dayMidnight.getTime() <= endMidnight.getTime()
-      );
-    }
-    catch (error) {
-      consola.debug(
-        "Use Calendar: ical.js comparison failed, using UTC fallback:",
-        error,
-      );
-      return day.getTime() >= start.getTime() && day.getTime() <= end.getTime();
-    }
+    const localDay = toCalendarDate(toZoned(day));
+    return (
+      localDay.compare(toCalendarDate(toZoned(start))) >= 0
+      && localDay.compare(toCalendarDate(toZoned(end))) <= 0
+    );
   }
 
   function createLocalDate(year: number, month: number, day: number): Date {
@@ -195,28 +138,15 @@ export function useCalendar() {
       0,
     );
 
-    const startDate = parseStableDate(new Date(firstDayOfMonth.getTime()));
-    const dayOfWeek = startDate.getDay();
-    startDate.setDate(startDate.getDate() - dayOfWeek);
-
-    const endDate = parseStableDate(new Date(lastDayOfMonth.getTime()));
-    const endDayOfWeek = endDate.getDay();
-    endDate.setDate(endDate.getDate() + (6 - endDayOfWeek));
+    const startDate = startOfWeek(firstDayOfMonth);
+    const endDate = endOfWeek(lastDayOfMonth);
+    const totalDays = differenceInCalendarDays(endDate, startDate) + 1;
 
     const weeks: Date[][] = [];
-    const totalDays
-      = Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      ) + 1;
-
     for (let dayIndex = 0; dayIndex < totalDays; dayIndex += 7) {
-      const week: Date[] = [];
-      for (let i = 0; i < 7; i++) {
-        const dayDate = parseStableDate(new Date(startDate.getTime()));
-        dayDate.setDate(startDate.getDate() + dayIndex + i);
-        week.push(dayDate);
-      }
-      weeks.push(week);
+      weeks.push(
+        Array.from({ length: 7 }, (_, i) => addDays(startDate, dayIndex + i)),
+      );
     }
 
     return weeks;
@@ -242,36 +172,15 @@ export function useCalendar() {
   }
 
   function getLocalTimeFromUTC(utcDate: Date): Date {
-    try {
-      const browserTimezone = getSafeTimezone();
-      const timezone = ical.TimezoneService.get(browserTimezone);
-
-      if (timezone) {
-        const utcTime = createICalTime(utcDate, true);
-
-        const localTime = utcTime.convertToZone(timezone);
-
-        const result = new Date(
-          localTime.year,
-          localTime.month - 1,
-          localTime.day,
-          localTime.hour,
-          localTime.minute,
-          localTime.second,
-        );
-
-        return result;
-      }
-
-      return new Date(utcDate.getTime());
-    }
-    catch (error) {
-      consola.warn(
-        "Use Calendar: ical.js timezone conversion failed, using fallback:",
-        error,
-      );
-      return new Date(utcDate.getTime());
-    }
+    const local = toZoned(utcDate);
+    return new Date(
+      local.year,
+      local.month - 1,
+      local.day,
+      local.hour,
+      local.minute,
+      local.second,
+    );
   }
 
   function getLocalTimeString(
@@ -716,6 +625,14 @@ export function useCalendar() {
   }
 
   function getCombinedEventColors(event: CalendarEvent): string | string[] {
+    const hasMultipleSources = (event.sourceCalendars?.length ?? 0) > 1;
+    if (!hasMultipleSources && isShiftEvent(event) && event.color !== undefined && event.color !== null) {
+      if (Array.isArray(event.color))
+        return event.color;
+      if (typeof event.color === "string")
+        return event.color;
+    }
+
     const colors: string[] = [];
 
     if (event.sourceCalendars && event.sourceCalendars.length > 0) {
@@ -748,11 +665,12 @@ export function useCalendar() {
 
   function combineEvents(events: CalendarEvent[]): CalendarEvent[] {
     const eventMap = new Map<string, CalendarEvent>();
+    const normalize = (value?: string | null) => (value ?? "").trim().toLowerCase();
 
     events.forEach((event) => {
       const startTime = parseStableDate(event.start).getTime();
       const endTime = parseStableDate(event.end).getTime();
-      const key = `${event.title}-${startTime}-${endTime}-${event.location || ""}-${event.description || ""}`;
+      const key = `${normalize(event.title)}-${startTime}-${endTime}-${normalize(event.location)}-${normalize(event.description)}`;
 
       if (eventMap.has(key)) {
         const existingEvent = eventMap.get(key)!;
@@ -1089,21 +1007,18 @@ export function useCalendar() {
     events: CalendarEvent[],
     day: Date,
   ): CalendarEvent[] {
-    return events
-      .filter((event) => {
-        const eventStart = parseStableDate(event.start);
-        const eventEnd = parseStableDate(event.end);
+    return sortEvents(getAllEventsForDay(events, day));
+  }
 
-        return (
-          isSameLocalDay(day, eventStart, event.allDay)
-          || isLocalDayInRange(day, eventStart, eventEnd, event.allDay)
-        );
-      })
-      .sort((a, b) => {
-        const aStart = parseStableDate(a.start).getTime();
-        const bStart = parseStableDate(b.start).getTime();
-        return aStart - bStart;
-      });
+  function isShiftEvent(event: CalendarEvent): boolean {
+    const list = (integrations.value as readonly Integration[]) || [];
+    if (!list.length)
+      return false;
+    const isShiftsIntegration = (id?: string) =>
+      !!id && list.find(i => i.id === id)?.service === "shifts";
+    if (isShiftsIntegration(event.integrationId))
+      return true;
+    return event.sourceCalendars?.some(sc => isShiftsIntegration(sc.integrationId)) ?? false;
   }
 
   function getAllEventsForDay(
@@ -1115,6 +1030,8 @@ export function useCalendar() {
       const eventEnd = parseStableDate(event.end);
 
       const isSameStart = isSameLocalDay(day, eventStart, event.allDay);
+      if (!event.allDay && isShiftEvent(event))
+        return isSameStart;
       const isInRange = isLocalDayInRange(
         day,
         eventStart,
@@ -1185,6 +1102,7 @@ export function useCalendar() {
     getMiniCalendarWeeks,
     getAgendaEventsForDay,
     getAllEventsForDay,
+    isShiftEvent,
     getEventsForDateRange,
     createPlaceholderEvent,
     isPlaceholderEvent,
