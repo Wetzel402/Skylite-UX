@@ -3,7 +3,17 @@ import ical from "ical.js";
 
 import type { ICalEvent } from "./types";
 
-ical.design.strict = false;
+type ICalDesign = {
+  design?: {
+    strict?: boolean;
+  };
+};
+
+const icalWithDesign = ical as unknown as ICalDesign;
+
+if (icalWithDesign.design) {
+  icalWithDesign.design.strict = false;
+}
 
 export class ICalServerService {
   constructor(private integrationId: string, private url: string) {}

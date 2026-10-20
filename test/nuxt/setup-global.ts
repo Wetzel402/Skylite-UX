@@ -31,6 +31,30 @@ vi.stubGlobal("getRouterParam", getRouterParamMock);
 vi.stubGlobal("getQuery", getQueryMock);
 vi.stubGlobal("setResponseHeaders", setResponseHeadersMock);
 
+const localStorageState = new Map<string, string>();
+const localStorageMock = {
+  clear() {
+    localStorageState.clear();
+  },
+  getItem(key: string) {
+    return localStorageState.get(key) ?? null;
+  },
+  key(index: number) {
+    return [...localStorageState.keys()][index] ?? null;
+  },
+  removeItem(key: string) {
+    localStorageState.delete(key);
+  },
+  setItem(key: string, value: string) {
+    localStorageState.set(key, value);
+  },
+  get length() {
+    return localStorageState.size;
+  },
+};
+
+vi.stubGlobal("localStorage", localStorageMock);
+
 class EventSourceMock {
   static readonly CONNECTING = 0;
   static readonly OPEN = 1;

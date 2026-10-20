@@ -5,6 +5,12 @@ import {
   getBaseCalendarEventId,
   useCalendar,
 } from "../../../../app/composables/useCalendar";
+import {
+  getBrowserTimezone,
+  isTimezoneRegistered,
+  setBrowserTimezone,
+  setTimezoneRegistered,
+} from "../../../../app/types/global";
 
 describe("getBaseCalendarEventId", () => {
   it("returns the id unchanged when there is no occurrence suffix", () => {
@@ -107,6 +113,67 @@ describe("useCalendar", () => {
 
       const result = calendar.isSameLocalDay(date1, date2, false);
       expect(typeof result).toBe("boolean");
+    });
+
+    describe("DST boundaries in America/Chicago", () => {
+      let prevRegistered: boolean;
+      let prevTimezone: string | undefined;
+
+      beforeEach(() => {
+        prevRegistered = isTimezoneRegistered();
+        prevTimezone = getBrowserTimezone();
+        setTimezoneRegistered(true);
+        setBrowserTimezone("America/Chicago");
+      });
+
+      afterEach(() => {
+        setTimezoneRegistered(prevRegistered);
+        setBrowserTimezone(prevTimezone ?? "");
+      });
+
+      it("treats local midnight on the fall-back day as Nov 1", () => {
+        const calendar = useCalendar();
+        expect(calendar.isSameLocalDay(new Date("2026-11-01T05:00:00Z"), new Date("2026-11-01T22:00:00Z"))).toBe(true);
+        expect(calendar.isSameLocalDay(new Date("2026-11-01T04:00:00Z"), new Date("2026-11-01T05:00:00Z"))).toBe(false);
+        expect(calendar.getLocalTimeFromUTC(new Date("2026-11-01T05:00:00Z")).getDate()).toBe(1);
+        expect(calendar.getLocalTimeFromUTC(new Date("2026-11-01T04:00:00Z")).getHours()).toBe(23);
+      });
+
+      it("keeps standard time until the spring-forward instant", () => {
+        const calendar = useCalendar();
+        const local = calendar.getLocalTimeFromUTC(new Date("2026-03-08T05:00:00Z"));
+        expect(local.getDate()).toBe(7);
+        expect(local.getHours()).toBe(23);
+        expect(calendar.getLocalTimeFromUTC(new Date("2026-03-08T08:00:00Z")).getHours()).toBe(3);
+      });
+
+      it("matches local day range across the fall-back day", () => {
+        const calendar = useCalendar();
+        expect(calendar.isLocalDayInRange(
+          new Date("2026-11-01T05:00:00Z"),
+          new Date("2026-10-31T05:00:00Z"),
+          new Date("2026-11-01T06:00:00Z"),
+        )).toBe(true);
+        expect(calendar.isLocalDayInRange(
+          new Date("2026-11-01T05:00:00Z"),
+          new Date("2026-10-30T05:00:00Z"),
+          new Date("2026-11-01T04:00:00Z"),
+        )).toBe(false);
+      });
+
+      it("builds a 5-week grid for November 2026", () => {
+        const weeks = useCalendar().getLocalMonthWeeks(new Date(2026, 10, 15, 12));
+        expect(weeks).toHaveLength(5);
+        expect(weeks.every(week => week.length === 7)).toBe(true);
+        expect(weeks[4]![6]!.getDate()).toBe(5);
+      });
+
+      it("keeps a 6-week grid for August 2026", () => {
+        const weeks = useCalendar().getLocalMonthWeeks(new Date(2026, 7, 15, 12));
+        expect(weeks).toHaveLength(6);
+        expect(weeks[0]![0]!.getDate()).toBe(26);
+        expect(weeks[5]![6]!.getDate()).toBe(5);
+      });
     });
 
     it("should get local time string with timezone conversion", () => {
@@ -273,6 +340,62 @@ describe("useCalendar", () => {
     });
   });
 
+  describe("overnight shift events", () => {
+    const overnight = (id: string, integrationId: string): CalendarEvent => ({
+      id,
+      title: "Nights",
+      start: new Date("2025-01-15T19:00:00Z"),
+      end: new Date("2025-01-16T05:00:00Z"),
+      allDay: false,
+      integrationId,
+    });
+    const startDay = new Date("2025-01-15T12:00:00Z");
+    const nextDay = new Date("2025-01-16T12:00:00Z");
+    let wasTimezoneRegistered = false;
+
+    beforeEach(() => {
+      wasTimezoneRegistered = isTimezoneRegistered();
+      setTimezoneRegistered(false);
+      useNuxtData("integrations").data.value = [
+        { id: "int-shifts", type: "calendar", service: "shifts" },
+        { id: "int-ical", type: "calendar", service: "iCal" },
+      ];
+    });
+
+    afterEach(() => {
+      setTimezoneRegistered(wasTimezoneRegistered);
+      useNuxtData("integrations").data.value = undefined;
+    });
+
+    it("identifies shift events by integration or source calendar", () => {
+      const { isShiftEvent } = useCalendar();
+
+      expect(isShiftEvent(overnight("s1", "int-shifts"))).toBe(true);
+      expect(isShiftEvent(overnight("i1", "int-ical"))).toBe(false);
+      expect(isShiftEvent({
+        ...overnight("s2", ""),
+        sourceCalendars: [{ integrationId: "int-shifts", integrationName: "Shifts", calendarId: "c", calendarName: "c", accessRole: "read", canEdit: false }],
+      })).toBe(true);
+    });
+
+    it("shows an overnight shift only on its start day", () => {
+      const { getAllEventsForDay, getAgendaEventsForDay } = useCalendar();
+      const events = [overnight("s1", "int-shifts")];
+
+      expect(getAllEventsForDay(events, startDay)).toHaveLength(1);
+      expect(getAllEventsForDay(events, nextDay)).toHaveLength(0);
+      expect(getAgendaEventsForDay(events, nextDay)).toHaveLength(0);
+    });
+
+    it("still shows other overnight events on every day they touch", () => {
+      const { getAllEventsForDay } = useCalendar();
+      const events = [overnight("i1", "int-ical")];
+
+      expect(getAllEventsForDay(events, startDay)).toHaveLength(1);
+      expect(getAllEventsForDay(events, nextDay)).toHaveLength(1);
+    });
+  });
+
   describe("UI helpers", () => {
     it("should return default heights for month, week, day", () => {
       const { computedEventHeight } = useCalendar();
@@ -380,6 +503,130 @@ describe("useCalendar", () => {
 
       expect(result[0]!.title).toBe("A");
       expect(result[1]!.title).toBe("B");
+    });
+
+    const birthdayStart = new Date("2026-10-03T00:00:00Z");
+    const birthdayEnd = new Date("2026-10-04T00:00:00Z");
+
+    function birthdayEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
+      return {
+        id: "b1",
+        title: "John Doe's Birthday",
+        start: birthdayStart,
+        end: birthdayEnd,
+        allDay: true,
+        ...overrides,
+      };
+    }
+
+    it("stripes merged events with each source's calendar color", () => {
+      const { combineEvents } = useCalendar();
+      const result = combineEvents([
+        birthdayEvent({
+          id: "g1",
+          color: "#aaa",
+          sourceCalendars: [{ integrationId: "i1", calendarId: "c1", accessRole: "read", canEdit: false, eventColor: "#aaa" }],
+        }),
+        birthdayEvent({
+          id: "g2",
+          color: "#bbb",
+          sourceCalendars: [{ integrationId: "i2", calendarId: "c2", accessRole: "read", canEdit: false, eventColor: "#bbb" }],
+        }),
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.color).toEqual(["#aaa", "#bbb"]);
+    });
+
+    it("prefers a source's user color over its calendar color when merged", () => {
+      const { combineEvents } = useCalendar();
+      const result = combineEvents([
+        birthdayEvent({
+          id: "g1",
+          color: "#aaa",
+          sourceCalendars: [{ integrationId: "i1", calendarId: "c1", accessRole: "read", canEdit: false, eventColor: "#aaa", userColor: "#111" }],
+        }),
+        birthdayEvent({
+          id: "g2",
+          color: "#bbb",
+          sourceCalendars: [{ integrationId: "i2", calendarId: "c2", accessRole: "read", canEdit: false, eventColor: "#bbb" }],
+        }),
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.color).toEqual(["#111", "#bbb"]);
+    });
+
+    it("uses the source color for a single-source non-shift event", () => {
+      const { combineEvents } = useCalendar();
+      const result = combineEvents([
+        birthdayEvent({
+          color: "#123456",
+          sourceCalendars: [{ integrationId: "i1", calendarId: "c1", accessRole: "read", canEdit: false, eventColor: "#06b6d4" }],
+        }),
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.color).toBe("#06b6d4");
+    });
+
+    it("keeps a single-source shift event's own color", () => {
+      useNuxtData("integrations").data.value = [
+        { id: "int-shifts", type: "calendar", service: "shifts" },
+      ];
+      try {
+        const { combineEvents } = useCalendar();
+        const result = combineEvents([
+          birthdayEvent({
+            color: "#123456",
+            integrationId: "int-shifts",
+            sourceCalendars: [{ integrationId: "int-shifts", calendarId: "c1", accessRole: "read", canEdit: false, eventColor: "#06b6d4" }],
+          }),
+        ]);
+
+        expect(result).toHaveLength(1);
+        expect(result[0]!.color).toBe("#123456");
+      }
+      finally {
+        useNuxtData("integrations").data.value = undefined;
+      }
+    });
+
+    it("merges events whose title, location and description differ only in case", () => {
+      const { combineEvents } = useCalendar();
+      const result = combineEvents([
+        birthdayEvent({
+          id: "g1",
+          location: "Central Park",
+          description: "Party at noon",
+          sourceCalendars: [{ integrationId: "i1", calendarId: "c1", accessRole: "read", canEdit: false, eventColor: "#aaa" }],
+        }),
+        birthdayEvent({
+          id: "g2",
+          title: "John Doe's birthday",
+          location: "central park",
+          description: "party at noon",
+          sourceCalendars: [{ integrationId: "i2", calendarId: "c2", accessRole: "read", canEdit: false, eventColor: "#bbb" }],
+        }),
+      ]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]!.sourceCalendars).toHaveLength(2);
+    });
+
+    it("does not merge events at different times", () => {
+      const { combineEvents } = useCalendar();
+      const result = combineEvents([
+        birthdayEvent({ id: "g1", allDay: false }),
+        birthdayEvent({
+          id: "g2",
+          allDay: false,
+          start: new Date("2026-10-03T01:00:00Z"),
+          end: new Date("2026-10-04T01:00:00Z"),
+        }),
+      ]);
+
+      expect(result).toHaveLength(2);
     });
   });
 });

@@ -1,3 +1,4 @@
+import { CalendarDateTime, fromDate } from "@internationalized/date";
 import consola from "consola";
 import ical from "ical.js";
 
@@ -49,7 +50,7 @@ export function parseRRuleString(rruleString: string): ICalEvent["rrule"] | unde
         break;
 
       case "UNTIL":
-        rruleObj.until = value;
+        rruleObj.until = normalizeUntil(value);
         break;
     }
   }
@@ -59,6 +60,63 @@ export function parseRRuleString(rruleString: string): ICalEvent["rrule"] | unde
   }
 
   return rruleObj;
+}
+
+function normalizeUntil(value: string): string {
+  if (value.includes("-")) {
+    return value;
+  }
+  try {
+    return ical.Recur.fromString(`FREQ=DAILY;UNTIL=${value}`).until?.toString() ?? value;
+  }
+  catch {
+    return value;
+  }
+}
+
+function untilToIcalString(until: string): string {
+  if (!until.includes("-")) {
+    return until;
+  }
+  try {
+    return ical.Time.fromString(until, undefined).toICALString();
+  }
+  catch {
+    return until;
+  }
+}
+
+export function rruleObjectToString(rrule: {
+  freq: string;
+  interval?: number;
+  byday?: string[];
+  bymonth?: number[];
+  count?: number;
+  until?: string;
+}): string {
+  const parts = [`FREQ=${rrule.freq.toUpperCase()}`];
+
+  if (rrule.interval && rrule.interval > 1) {
+    parts.push(`INTERVAL=${rrule.interval}`);
+  }
+
+  if (rrule.count) {
+    parts.push(`COUNT=${rrule.count}`);
+  }
+
+  if (rrule.until) {
+    parts.push(`UNTIL=${untilToIcalString(rrule.until)}`);
+  }
+
+  if (rrule.byday && rrule.byday.length > 0) {
+    parts.push(`BYDAY=${rrule.byday.join(",")}`);
+  }
+
+  if (rrule.bymonth && rrule.bymonth.length > 0) {
+    parts.push(`BYMONTH=${rrule.bymonth.join(",")}`);
+  }
+
+  return `RRULE:${parts.join(";")}`;
 }
 
 function parseUntilToDate(until: string | undefined): Date | null {
@@ -73,12 +131,47 @@ function parseUntilToDate(until: string | undefined): Date | null {
   }
 }
 
+function toFloatingTime(date: Date, timeZone: string): ical.Time {
+  const local = fromDate(date, timeZone);
+  return ical.Time.fromData({
+    year: local.year,
+    month: local.month,
+    day: local.day,
+    hour: local.hour,
+    minute: local.minute,
+    second: local.second,
+    isDate: false,
+  });
+}
+
+function fromFloatingTime(time: ical.Time, timeZone: string): Date {
+  return new CalendarDateTime(
+    time.year,
+    time.month,
+    time.day,
+    time.hour,
+    time.minute,
+    time.second,
+  ).toDate(timeZone);
+}
+
+function untilInZone(until: string | undefined, timeZone: string): string | undefined {
+  if (!until)
+    return until;
+  const normalized = normalizeUntil(until);
+  if (!normalized.endsWith("Z"))
+    return normalized;
+  const untilDate = parseUntilToDate(normalized);
+  return untilDate ? toFloatingTime(untilDate, timeZone).toString() : normalized;
+}
+
 export function expandRecurringEvents<T extends {
   id: string;
   start: Date;
   end: Date;
+  allDay?: boolean;
   ical_event?: ICalEvent;
-}>(events: T[], startDate: Date, endDate: Date): T[] {
+}>(events: T[], startDate: Date, endDate: Date, timeZone = "UTC"): T[] {
   const expandedEvents: T[] = [];
 
   for (const event of events) {
@@ -88,19 +181,23 @@ export function expandRecurringEvents<T extends {
     }
 
     try {
+      const zone = event.allDay ? "UTC" : timeZone;
       const vevent = new ical.Component(["vevent", [], []]);
       vevent.addPropertyWithValue("uid", event.ical_event.uid);
       vevent.addPropertyWithValue("summary", event.ical_event.summary);
       vevent.addPropertyWithValue("description", event.ical_event.description);
       vevent.addPropertyWithValue("location", event.ical_event.location);
 
-      const dtstart = ical.Time.fromJSDate(new Date(event.start), true);
+      const dtstart = toFloatingTime(new Date(event.start), zone);
       vevent.addPropertyWithValue("dtstart", dtstart);
-      const dtend = ical.Time.fromJSDate(new Date(event.end), true);
+      const dtend = toFloatingTime(new Date(event.end), zone);
       vevent.addPropertyWithValue("dtend", dtend);
 
       const rrule = new ical.Property("rrule", vevent);
-      rrule.setValue(event.ical_event.rrule);
+      rrule.setValue({
+        ...event.ical_event.rrule,
+        until: untilInZone(event.ical_event.rrule.until, zone),
+      });
       vevent.addProperty(rrule);
 
       const expansion = new ical.RecurExpansion({
@@ -108,6 +205,7 @@ export function expandRecurringEvents<T extends {
         dtstart,
       });
 
+      const duration = new Date(event.end).getTime() - new Date(event.start).getTime();
       let count = 0;
       const maxInstances = 1000;
 
@@ -118,19 +216,18 @@ export function expandRecurringEvents<T extends {
           break;
         }
 
-        const currentDate = currentTime.toJSDate();
+        const currentDate = fromFloatingTime(currentTime, zone);
 
         if (currentDate > endDate) {
           break;
         }
 
         if (currentDate >= startDate) {
-          const duration = new Date(event.end).getTime() - new Date(event.start).getTime();
           const newEnd = new Date(currentDate.getTime() + duration);
 
           expandedEvents.push({
             ...event,
-            id: `${event.id}-${currentTime.toICALString()}`,
+            id: `${event.id}-${ical.Time.fromJSDate(currentDate, true).toICALString()}`,
             start: currentDate,
             end: newEnd,
             ical_event: {

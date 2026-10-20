@@ -71,18 +71,42 @@ export type IntegrationConfig = {
   icon: string;
   dialogFields: DialogField[];
   syncInterval: number;
-  customSaveHandler?: (
-    integrationData: Record<string, unknown>,
-    settingsData: Record<string, unknown>,
-    isExisting: boolean,
-    originalIntegration?: Integration | null,
-  ) => Promise<boolean>;
+  setupDialog?: IntegrationSetupDialog;
+  setupDialogLabel?: string;
+};
+
+export type IntegrationSetupDialog = "calendarSelect" | "shiftsConfig";
+
+export type ShiftRotationItem = {
+  id: string;
+  name: string;
+  cycleDays: number;
+  color: string | null;
+  order: number;
+  _count?: { slots: number; assignments: number };
+};
+
+export type ShiftAssignmentItem = {
+  id: string;
+  userId: string | null;
+  shiftRotationId: string;
+  startDate: string;
+  endDate: string | null;
+  user: { id: string; name: string; avatar: string | null; color: string | null } | null;
+  shiftRotation: { id: string; name: string; cycleDays: number; color: string | null };
 };
 
 export type ICalSettings = {
   eventColor?: string;
   user?: string[];
   useUserColors?: boolean;
+};
+
+export type CalendarListItem = {
+  id: string;
+  summary: string;
+  backgroundColor?: string;
+  accessRole?: "read" | "write";
 };
 
 export type CalendarConfig = {

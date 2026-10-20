@@ -12,7 +12,6 @@ import type {
   IntegrationStatus,
 } from "~/types/integrations";
 
-import { useStableDate } from "~/composables/useStableDate";
 import { integrationRegistry } from "~/types/integrations";
 
 import type { TandoorShoppingListEntry } from "../../../server/integrations/tandoor/types";
@@ -21,8 +20,6 @@ export class TandoorService implements IntegrationService {
   private integrationId: string;
   private apiKey: string;
   private baseUrl: string;
-
-  private parseStableDate: (dateInput?: string | Date, fallback?: Date) => Date;
 
   private status: IntegrationStatus = {
     isConnected: false,
@@ -33,30 +30,16 @@ export class TandoorService implements IntegrationService {
     this.integrationId = integrationId;
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
+  }
 
-    if (import.meta.client) {
-      const { parseStableDate, getStableDate } = useStableDate();
-      this.parseStableDate = parseStableDate;
-      this.status.lastChecked = getStableDate();
-    }
-    else {
-      this.parseStableDate = (dateInput?: string | Date, fallback?: Date) => {
-        if (!dateInput)
-          return fallback || new Date();
-        return new Date(dateInput);
-      };
-      this.status.lastChecked = new Date();
-    }
+  private parseStableDate(dateInput?: string | Date, fallback?: Date): Date {
+    if (!dateInput)
+      return fallback || new Date();
+    return new Date(dateInput);
   }
 
   private getCurrentDate(): Date {
-    if (import.meta.client) {
-      const { getStableDate } = useStableDate();
-      return getStableDate();
-    }
-    else {
-      return new Date();
-    }
+    return new Date();
   }
 
   async initialize(): Promise<void> {

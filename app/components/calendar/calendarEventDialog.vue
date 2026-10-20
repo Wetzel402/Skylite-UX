@@ -3,6 +3,7 @@ import type { DateValue } from "@internationalized/date";
 
 import {
   CalendarDate,
+  CalendarDateTime,
   getLocalTimeZone,
   parseDate,
 } from "@internationalized/date";
@@ -24,7 +25,7 @@ import {
 } from "~/composables/useRecurrence";
 import { useTimePicker } from "~/composables/useTimePicker";
 import { useUsers } from "~/composables/useUsers";
-import { DEFAULT_LOCAL_EVENT_COLOR, getBrowserTimezone } from "~/types/global";
+import { DEFAULT_LOCAL_EVENT_COLOR, getBrowserTimezone, isTimezoneRegistered } from "~/types/global";
 import { integrationRegistry } from "~/types/integrations";
 
 import type { ICalEvent } from "../../../server/integrations/iCal/types";
@@ -916,28 +917,26 @@ watch(
       if (isExpandedEvent && newEvent.integrationId) {
         const originalId = newEvent.id.split("-")[0];
         try {
-          if (currentIntegration.value?.service === "google") {
-            const { getCalendarEvent } = useCalendarIntegrations();
-            const fetchedEvent = await getCalendarEvent(
-              newEvent.integrationId,
-              originalId || "",
-              newEvent.calendarId,
-            );
+          const { getCalendarEvent } = useCalendarIntegrations();
+          const fetchedEvent = await getCalendarEvent(
+            newEvent.integrationId,
+            originalId || "",
+            newEvent.calendarId,
+          );
 
-            if (fetchedEvent) {
-              originalEvent = {
-                ...fetchedEvent,
-                start: newEvent.start,
-                end: newEvent.end,
-                ical_event: newEvent.ical_event
-                  ? {
-                      ...fetchedEvent.ical_event,
-                      dtstart: newEvent.ical_event.dtstart,
-                      dtend: newEvent.ical_event.dtend,
-                    }
-                  : null,
-              } as CalendarEvent;
-            }
+          if (fetchedEvent) {
+            originalEvent = {
+              ...fetchedEvent,
+              start: newEvent.start,
+              end: newEvent.end,
+              ical_event: newEvent.ical_event
+                ? {
+                    ...fetchedEvent.ical_event,
+                    dtstart: newEvent.ical_event.dtstart,
+                    dtend: newEvent.ical_event.dtend,
+                  }
+                : null,
+            } as CalendarEvent;
           }
         }
         catch {}
@@ -1387,34 +1386,18 @@ function convertFormToEventDates(): { start: Date; end: Date } | null {
     endLocal.setHours(endHours24, endMinute.value, 0, 0);
 
     const browserTimezone = getBrowserTimezone();
-    const timezone = browserTimezone
-      ? ical.TimezoneService.get(browserTimezone)
-      : null;
+    const timezone = isTimezoneRegistered() && browserTimezone
+      ? browserTimezone
+      : getLocalTimeZone();
+    const toUtc = (local: Date) => new CalendarDateTime(
+      local.getFullYear(),
+      local.getMonth() + 1,
+      local.getDate(),
+      local.getHours(),
+      local.getMinutes(),
+    ).toDate(timezone);
 
-    if (timezone) {
-      const startICal = ical.Time.fromJSDate(startLocal, true);
-      const endICal = ical.Time.fromJSDate(endLocal, true);
-
-      const startLocalICal = startICal.convertToZone(timezone);
-      const endLocalICal = endICal.convertToZone(timezone);
-
-      const startUTC = startLocalICal.convertToZone(
-        ical.TimezoneService.get("UTC"),
-      );
-      const endUTC = endLocalICal.convertToZone(
-        ical.TimezoneService.get("UTC"),
-      );
-
-      return { start: startUTC.toJSDate(), end: endUTC.toJSDate() };
-    }
-
-    const startICal = ical.Time.fromJSDate(startLocal, false).convertToZone(
-      ical.TimezoneService.get("UTC"),
-    );
-    const endICal = ical.Time.fromJSDate(endLocal, false).convertToZone(
-      ical.TimezoneService.get("UTC"),
-    );
-    return { start: startICal.toJSDate(), end: endICal.toJSDate() };
+    return { start: toUtc(startLocal), end: toUtc(endLocal) };
   }
   catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);

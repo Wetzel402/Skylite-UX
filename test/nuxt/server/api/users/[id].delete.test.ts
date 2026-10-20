@@ -65,6 +65,10 @@ describe("dELETE /api/users/[id]", () => {
         todoColumn: {
           delete: vi.fn().mockResolvedValue({ id: "column-1" }),
         },
+        integration: {
+          findMany: vi.fn().mockResolvedValue([]),
+          update: vi.fn(),
+        },
         user: {
           delete: vi.fn().mockResolvedValue(mockUser),
         },
@@ -108,6 +112,74 @@ describe("dELETE /api/users/[id]", () => {
       });
 
       expect(response).toEqual({ success: true });
+    });
+  });
+
+  describe("integration settings cleanup", () => {
+    async function deleteWithIntegrations(integrations: Array<{ id: string; settings: unknown }>) {
+      prisma.user.findUnique.mockResolvedValue(createBaseUser());
+      const txMock = {
+        todo: { deleteMany: vi.fn() },
+        todoColumn: { delete: vi.fn() },
+        integration: {
+          findMany: vi.fn().mockResolvedValue(integrations),
+          update: vi.fn().mockResolvedValue({}),
+        },
+        user: { delete: vi.fn().mockResolvedValue(createBaseUser()) },
+      };
+      prisma.$transaction.mockImplementation(async (callback) => {
+        return await callback(txMock as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0]);
+      });
+
+      await handler(createMockH3Event({ params: { id: "user-1" } }));
+      return txMock;
+    }
+
+    it("removes the user from integration-level settings", async () => {
+      const txMock = await deleteWithIntegrations([
+        { id: "ical-1", settings: { eventColor: "#aaa", user: ["user-1", "user-2"], useUserColors: true } },
+      ]);
+
+      expect(txMock.integration.update).toHaveBeenCalledWith({
+        where: { id: "ical-1" },
+        data: { settings: { eventColor: "#aaa", user: ["user-2"], useUserColors: true } },
+      });
+    });
+
+    it("turns off user colors on a calendar whose only user is removed", async () => {
+      const txMock = await deleteWithIntegrations([
+        {
+          id: "google-1",
+          settings: {
+            calendars: [
+              { id: "cal-1", user: ["user-1"], useUserColors: true },
+              { id: "cal-2", user: ["user-2"], useUserColors: true },
+            ],
+          },
+        },
+      ]);
+
+      expect(txMock.integration.update).toHaveBeenCalledWith({
+        where: { id: "google-1" },
+        data: {
+          settings: {
+            calendars: [
+              { id: "cal-1", user: [], useUserColors: false },
+              { id: "cal-2", user: ["user-2"], useUserColors: true },
+            ],
+          },
+        },
+      });
+    });
+
+    it("does not update integrations that do not reference the user", async () => {
+      const txMock = await deleteWithIntegrations([
+        { id: "ical-2", settings: { user: ["user-2"], useUserColors: true } },
+        { id: "mealie-1", settings: null },
+      ]);
+
+      expect(txMock.integration.update).not.toHaveBeenCalled();
+      expect(txMock.user.delete).toHaveBeenCalledWith({ where: { id: "user-1" } });
     });
   });
 
