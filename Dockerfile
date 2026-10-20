@@ -22,7 +22,7 @@ COPY . .
 RUN npx prisma generate
 
 # Build the application
-RUN npm run build
+RUN npx nuxt prepare && npm run build
 
 # Production stage
 FROM dhi.io/node:26-debian13-dev AS production
