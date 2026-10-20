@@ -15,7 +15,7 @@ RUN apt-get update -y && apt-get install -y openssl && \
 COPY . .
 
 RUN npx prisma generate
-RUN npm run build
+RUN npx nuxt prepare && npm run build
 
 FROM dhi.io/node:26-debian13-dev AS production
 
