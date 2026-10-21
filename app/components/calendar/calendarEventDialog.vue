@@ -46,6 +46,17 @@ const emit = defineEmits<{
 
 const { users, fetchUsers } = useUsers();
 
+const { isPortrait, isShortScreen, isWideScreen, isPhoneDevice } = useAppLayout();
+const isTwoColumn = computed(() => !isPortrait.value && isWideScreen.value);
+
+const panelClass = computed(() => {
+  if (isPhoneDevice.value)
+    return "w-full h-dvh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]";
+  if (isTwoColumn.value)
+    return "w-[min(56rem,calc(100vw-2rem))] max-h-[90dvh] rounded-lg border border-default shadow-lg";
+  return "w-[min(425px,calc(100vw-1rem))] max-h-[90dvh] rounded-lg border border-default shadow-lg";
+});
+
 const {
   getEventStartTimeForInput,
   getEventEndTimeForInput,
@@ -1562,11 +1573,13 @@ function handleDelete() {
     @click="emit('close')"
   >
     <div
-      class="w-[425px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col bg-default"
+      :class="panelClass"
       @click.stop
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="isShortScreen ? 'px-4 py-2' : 'p-4'"
       >
         <h2 class="text-base font-semibold leading-6">
           {{ event?.id ? "Edit Event" : "Create Event" }}
@@ -1580,449 +1593,475 @@ function handleDelete() {
           @click="emit('close')"
         />
       </div>
-      <div class="p-4 space-y-6">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4">
         <div
-          v-if="error"
-          class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
-        >
-          {{ error }}
-        </div>
-        <div
-          v-if="!hasEditableSourceCalendars && eventSourceCalendars.length > 0"
-          class="bg-info/10 text-info rounded-md px-3 py-2 text-sm"
-        >
-          This event cannot be edited. No connected calendars allow edits for
-          this event.
-        </div>
-        <div
-          v-if="
-            hasEditableSourceCalendars
-              && editableSourceCalendars.length < eventSourceCalendars.length
+          :class="
+            isTwoColumn
+              ? 'grid grid-cols-2 grid-rows-[auto_1fr] gap-6 items-start'
+              : 'space-y-6'
           "
-          class="bg-info/10 text-info rounded-md px-3 py-2 text-sm"
         >
-          This event can be edited. {{ editableSourceCalendars.length }} of
-          {{ eventSourceCalendars.length }} connected calendars support editing.
-        </div>
-        <div v-if="showCalendarPicker" class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Calendar</label>
-          <USelect
-            :items="calendarPickerOptions"
-            option-attribute="label"
-            value-attribute="value"
-            placeholder="Select calendar"
-            class="w-full"
-            :model-value="selectedIntegrationId || undefined"
-            @update:model-value="selectedIntegrationId = $event || null"
-          />
-          <USelect
-            v-if="
-              selectedIntegrationConfig?.supportsSelectCalendars
-                && integrationCalendarOptions.length > 0
-            "
-            :items="integrationCalendarOptions"
-            option-attribute="label"
-            value-attribute="value"
-            placeholder="Select specific calendar"
-            class="w-full mt-2"
-            :model-value="selectedCalendarId || undefined"
-            @update:model-value="selectedCalendarId = $event || null"
-          />
-        </div>
-        <div v-if="calendarAccordionItems.length" class="space-y-2">
-          <UAccordion :items="calendarAccordionItems">
-            <template #body>
-              <div class="space-y-1">
-                <div
-                  v-for="calendar in enrichedSourceCalendars"
-                  :key="`${calendar.integrationId}-${calendar.calendarId}`"
-                  class="flex items-center justify-between rounded-md border border-default px-3 py-2 text-sm"
-                >
-                  <div class="flex items-center gap-2 flex-1 min-w-0">
-                    <template
-                      v-if="
-                        supportsUserSelection(calendar)
-                          && calendar.eventUsers
-                          && calendar.eventUsers.length > 1
-                      "
+          <div
+            class="space-y-6"
+            :class="{ 'col-start-1 row-start-1': isTwoColumn }"
+          >
+            <div
+              v-if="error"
+              class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
+            >
+              {{ error }}
+            </div>
+            <div
+              v-if="!hasEditableSourceCalendars && eventSourceCalendars.length > 0"
+              class="bg-info/10 text-info rounded-md px-3 py-2 text-sm"
+            >
+              This event cannot be edited. No connected calendars allow edits for
+              this event.
+            </div>
+            <div
+              v-if="
+                hasEditableSourceCalendars
+                  && editableSourceCalendars.length < eventSourceCalendars.length
+              "
+              class="bg-info/10 text-info rounded-md px-3 py-2 text-sm"
+            >
+              This event can be edited. {{ editableSourceCalendars.length }} of
+              {{ eventSourceCalendars.length }} connected calendars support editing.
+            </div>
+            <div v-if="showCalendarPicker" class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Calendar</label>
+              <USelect
+                :items="calendarPickerOptions"
+                option-attribute="label"
+                value-attribute="value"
+                placeholder="Select calendar"
+                class="w-full"
+                :model-value="selectedIntegrationId || undefined"
+                @update:model-value="selectedIntegrationId = $event || null"
+              />
+              <USelect
+                v-if="
+                  selectedIntegrationConfig?.supportsSelectCalendars
+                    && integrationCalendarOptions.length > 0
+                "
+                :items="integrationCalendarOptions"
+                option-attribute="label"
+                value-attribute="value"
+                placeholder="Select specific calendar"
+                class="w-full mt-2"
+                :model-value="selectedCalendarId || undefined"
+                @update:model-value="selectedCalendarId = $event || null"
+              />
+            </div>
+            <div v-if="calendarAccordionItems.length" class="space-y-2">
+              <UAccordion :items="calendarAccordionItems">
+                <template #body>
+                  <div class="space-y-1">
+                    <div
+                      v-for="calendar in enrichedSourceCalendars"
+                      :key="`${calendar.integrationId}-${calendar.calendarId}`"
+                      class="flex items-center justify-between rounded-md border border-default px-3 py-2 text-sm"
                     >
-                      <UAvatarGroup size="sm">
+                      <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <template
+                          v-if="
+                            supportsUserSelection(calendar)
+                              && calendar.eventUsers
+                              && calendar.eventUsers.length > 1
+                          "
+                        >
+                          <UAvatarGroup size="sm">
+                            <UAvatar
+                              v-for="user in calendar.eventUsers"
+                              :key="user.id"
+                              :src="user.avatar || undefined"
+                              :alt="user.name || ''"
+                              size="sm"
+                              :ui="{
+                                root: user.avatar
+                                  ? ''
+                                  : 'ring-0 border-0 shadow-none',
+                                image: 'object-cover',
+                                fallback: user.avatar
+                                  ? ''
+                                  : 'ring-0 border-0 shadow-none',
+                              }"
+                              :style="
+                                user.avatar
+                                  ? undefined
+                                  : {
+                                    backgroundColor:
+                                      user.color || calendar.displayColor,
+                                  }
+                              "
+                            >
+                              <template v-if="!user.avatar" #fallback>
+                                <UIcon name="i-lucide-user" class="h-4 w-4" />
+                              </template>
+                            </UAvatar>
+                          </UAvatarGroup>
+                        </template>
+                        <template
+                          v-else-if="
+                            supportsUserSelection(calendar)
+                              && calendar.eventUsers
+                              && calendar.eventUsers.length === 1
+                              && calendar.eventUsers[0]
+                          "
+                        >
+                          <UAvatar
+                            :src="calendar.eventUsers[0]?.avatar || undefined"
+                            :alt="calendar.eventUsers[0]?.name || ''"
+                            size="sm"
+                            :ui="{
+                              root: calendar.eventUsers[0]?.avatar
+                                ? ''
+                                : 'ring-0 border-0 shadow-none',
+                              image: 'object-cover',
+                              fallback: calendar.eventUsers[0]?.avatar
+                                ? ''
+                                : 'ring-0 border-0 shadow-none',
+                            }"
+                            :style="
+                              calendar.eventUsers[0]?.avatar
+                                ? undefined
+                                : {
+                                  backgroundColor:
+                                    calendar.eventUsers[0]?.color
+                                    || calendar.displayColor,
+                                }
+                            "
+                          >
+                            <template
+                              v-if="!calendar.eventUsers[0]?.avatar"
+                              #fallback
+                            >
+                              <UIcon name="i-lucide-user" class="h-4 w-4" />
+                            </template>
+                          </UAvatar>
+                        </template>
                         <UAvatar
-                          v-for="user in calendar.eventUsers"
-                          :key="user.id"
-                          :src="user.avatar || undefined"
-                          :alt="user.name || ''"
+                          v-else
+                          :src="calendar.user?.avatar || undefined"
+                          :alt="calendar.user?.name || ''"
                           size="sm"
                           :ui="{
-                            root: user.avatar
+                            root: calendar.user
                               ? ''
                               : 'ring-0 border-0 shadow-none',
                             image: 'object-cover',
-                            fallback: user.avatar
+                            fallback: calendar.user
                               ? ''
                               : 'ring-0 border-0 shadow-none',
                           }"
                           :style="
-                            user.avatar
+                            calendar.user
                               ? undefined
-                              : {
-                                backgroundColor:
-                                  user.color || calendar.displayColor,
-                              }
+                              : { backgroundColor: calendar.displayColor }
                           "
                         >
-                          <template v-if="!user.avatar" #fallback>
-                            <UIcon name="i-lucide-user" class="h-4 w-4" />
+                          <template v-if="!calendar.user" #fallback>
+                            <UIcon name="i-lucide-calendar" class="h-4 w-4" />
                           </template>
                         </UAvatar>
-                      </UAvatarGroup>
-                    </template>
-                    <template
-                      v-else-if="
-                        supportsUserSelection(calendar)
-                          && calendar.eventUsers
-                          && calendar.eventUsers.length === 1
-                          && calendar.eventUsers[0]
-                      "
-                    >
-                      <UAvatar
-                        :src="calendar.eventUsers[0]?.avatar || undefined"
-                        :alt="calendar.eventUsers[0]?.name || ''"
-                        size="sm"
-                        :ui="{
-                          root: calendar.eventUsers[0]?.avatar
-                            ? ''
-                            : 'ring-0 border-0 shadow-none',
-                          image: 'object-cover',
-                          fallback: calendar.eventUsers[0]?.avatar
-                            ? ''
-                            : 'ring-0 border-0 shadow-none',
-                        }"
-                        :style="
-                          calendar.eventUsers[0]?.avatar
-                            ? undefined
-                            : {
-                              backgroundColor:
-                                calendar.eventUsers[0]?.color
-                                || calendar.displayColor,
-                            }
+                        <span class="truncate">
+                          {{ calendar.calendarName }}
+                        </span>
+                      </div>
+                      <UButton
+                        :icon="
+                          calendar.canEdit
+                            ? 'i-lucide-pencil'
+                            : 'i-lucide-pencil-off'
                         "
-                      >
-                        <template
-                          v-if="!calendar.eventUsers[0]?.avatar"
-                          #fallback
-                        >
-                          <UIcon name="i-lucide-user" class="h-4 w-4" />
-                        </template>
-                      </UAvatar>
-                    </template>
-                    <UAvatar
-                      v-else
-                      :src="calendar.user?.avatar || undefined"
-                      :alt="calendar.user?.name || ''"
-                      size="sm"
-                      :ui="{
-                        root: calendar.user
-                          ? ''
-                          : 'ring-0 border-0 shadow-none',
-                        image: 'object-cover',
-                        fallback: calendar.user
-                          ? ''
-                          : 'ring-0 border-0 shadow-none',
-                      }"
-                      :style="
-                        calendar.user
-                          ? undefined
-                          : { backgroundColor: calendar.displayColor }
-                      "
-                    >
-                      <template v-if="!calendar.user" #fallback>
-                        <UIcon name="i-lucide-calendar" class="h-4 w-4" />
-                      </template>
-                    </UAvatar>
-                    <span class="truncate">
-                      {{ calendar.calendarName }}
-                    </span>
+                        :color="
+                          calendar.canEdit
+                            && selectedEditableCalendars.has(
+                              `${calendar.integrationId}-${calendar.calendarId}`,
+                            )
+                            ? 'primary'
+                            : 'neutral'
+                        "
+                        variant="ghost"
+                        size="sm"
+                        :disabled="!calendar.canEdit"
+                        :aria-label="
+                          calendar.canEdit
+                            ? selectedEditableCalendars.has(
+                              `${calendar.integrationId}-${calendar.calendarId}`,
+                            )
+                              ? 'Deselect calendar for editing'
+                              : 'Select calendar for editing'
+                            : 'Read only calendar'
+                        "
+                        @click="
+                          calendar.canEdit && toggleCalendarSelection(calendar)
+                        "
+                      />
+                    </div>
                   </div>
+                </template>
+              </UAccordion>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Title</label>
+              <UInput
+                v-model="title"
+                placeholder="Event title"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
+                :disabled="isReadOnly"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Description</label>
+              <UTextarea
+                v-model="description"
+                placeholder="Event description"
+                :rows="isShortScreen ? 2 : 3"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
+                :disabled="isReadOnly"
+              />
+            </div>
+          </div>
+          <div
+            class="space-y-6"
+            :class="{ 'col-start-2 row-start-1 row-span-2': isTwoColumn }"
+          >
+            <div class="flex gap-4">
+              <div class="w-1/2 space-y-2">
+                <label class="block text-sm font-medium text-highlighted">Start Date</label>
+                <UPopover>
                   <UButton
-                    :icon="
-                      calendar.canEdit
-                        ? 'i-lucide-pencil'
-                        : 'i-lucide-pencil-off'
-                    "
-                    :color="
-                      calendar.canEdit
-                        && selectedEditableCalendars.has(
-                          `${calendar.integrationId}-${calendar.calendarId}`,
-                        )
-                        ? 'primary'
-                        : 'neutral'
-                    "
-                    variant="ghost"
-                    size="sm"
-                    :disabled="!calendar.canEdit"
-                    :aria-label="
-                      calendar.canEdit
-                        ? selectedEditableCalendars.has(
-                          `${calendar.integrationId}-${calendar.calendarId}`,
-                        )
-                          ? 'Deselect calendar for editing'
-                          : 'Select calendar for editing'
-                        : 'Read only calendar'
-                    "
-                    @click="
-                      calendar.canEdit && toggleCalendarSelection(calendar)
-                    "
+                    color="neutral"
+                    variant="subtle"
+                    icon="i-lucide-calendar"
+                    class="w-full justify-between"
+                    :disabled="isReadOnly"
+                  >
+                    <NuxtTime
+                      v-if="startDate"
+                      :datetime="startDate.toDate(getLocalTimeZone())"
+                      year="numeric"
+                      month="short"
+                      day="numeric"
+                    />
+                    <span v-else>Select a date</span>
+                  </UButton>
+                  <template #content>
+                    <GlobalDatePicker
+                      :model-value="(startDate as DateValue)"
+                      :disabled="isReadOnly"
+                      @update:model-value="
+                        (value) => {
+                          if (value) startDate = value as DateValue;
+                        }
+                      "
+                    />
+                  </template>
+                </UPopover>
+              </div>
+              <div v-if="!allDay" class="w-1/2 space-y-2">
+                <label class="block text-sm font-medium text-highlighted">Start Time</label>
+                <div class="flex gap-2">
+                  <USelect
+                    v-model="startHour"
+                    :items="hourOptions"
+                    option-attribute="label"
+                    value-attribute="value"
+                    class="flex-1"
+                    :ui="{ base: 'flex-1' }"
+                    :disabled="isReadOnly"
+                  />
+                  <USelect
+                    v-model="startMinute"
+                    :items="minuteOptions"
+                    option-attribute="label"
+                    value-attribute="value"
+                    class="flex-1"
+                    :ui="{ base: 'flex-1' }"
+                    :disabled="isReadOnly"
+                  />
+                  <USelect
+                    v-model="startAmPm"
+                    :items="amPmOptions"
+                    option-attribute="label"
+                    value-attribute="value"
+                    class="flex-1"
+                    :ui="{ base: 'flex-1' }"
+                    :disabled="isReadOnly"
                   />
                 </div>
               </div>
-            </template>
-          </UAccordion>
-        </div>
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Title</label>
-          <UInput
-            v-model="title"
-            placeholder="Event title"
-            class="w-full"
-            :ui="{ base: 'w-full' }"
-            :disabled="isReadOnly"
-          />
-        </div>
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Description</label>
-          <UTextarea
-            v-model="description"
-            placeholder="Event description"
-            :rows="3"
-            class="w-full"
-            :ui="{ base: 'w-full' }"
-            :disabled="isReadOnly"
-          />
-        </div>
-        <div class="flex gap-4">
-          <div class="w-1/2 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">Start Date</label>
-            <UPopover>
-              <UButton
-                color="neutral"
-                variant="subtle"
-                icon="i-lucide-calendar"
-                class="w-full justify-between"
+            </div>
+            <div class="flex gap-4">
+              <div class="w-1/2 space-y-2">
+                <label class="block text-sm font-medium text-highlighted">End Date</label>
+                <UPopover>
+                  <UButton
+                    color="neutral"
+                    variant="subtle"
+                    icon="i-lucide-calendar"
+                    class="w-full justify-between"
+                    :disabled="isReadOnly"
+                  >
+                    <NuxtTime
+                      v-if="endDate"
+                      :datetime="endDate.toDate(getLocalTimeZone())"
+                      year="numeric"
+                      month="short"
+                      day="numeric"
+                    />
+                    <span v-else>Select a date</span>
+                  </UButton>
+                  <template #content>
+                    <GlobalDatePicker
+                      :model-value="(endDate as DateValue)"
+                      :disabled="isReadOnly"
+                      @update:model-value="
+                        (value) => {
+                          if (value) endDate = value as DateValue;
+                        }
+                      "
+                    />
+                  </template>
+                </UPopover>
+              </div>
+              <div v-if="!allDay" class="w-1/2 space-y-2">
+                <label class="block text-sm font-medium text-highlighted">End Time</label>
+                <div class="flex gap-2">
+                  <USelect
+                    v-model="endHour"
+                    :items="hourOptions"
+                    option-attribute="label"
+                    value-attribute="value"
+                    class="flex-1"
+                    :ui="{ base: 'flex-1' }"
+                    :disabled="isReadOnly"
+                  />
+                  <USelect
+                    v-model="endMinute"
+                    :items="minuteOptions"
+                    option-attribute="label"
+                    value-attribute="value"
+                    class="flex-1"
+                    :ui="{ base: 'flex-1' }"
+                    :disabled="isReadOnly"
+                  />
+                  <USelect
+                    v-model="endAmPm"
+                    :items="amPmOptions"
+                    option-attribute="label"
+                    value-attribute="value"
+                    class="flex-1"
+                    :ui="{ base: 'flex-1' }"
+                    :disabled="isReadOnly"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <UCheckbox
+                v-model="allDay"
+                label="All day"
                 :disabled="isReadOnly"
-              >
-                <NuxtTime
-                  v-if="startDate"
-                  :datetime="startDate.toDate(getLocalTimeZone())"
-                  year="numeric"
-                  month="short"
-                  day="numeric"
-                />
-                <span v-else>Select a date</span>
-              </UButton>
-              <template #content>
-                <GlobalDatePicker
-                  :model-value="(startDate as DateValue)"
-                  :disabled="isReadOnly"
-                  @update:model-value="
-                    (value) => {
-                      if (value) startDate = value as DateValue;
-                    }
-                  "
-                />
-              </template>
-            </UPopover>
+                @change="handleAllDayToggle"
+              />
+            </div>
+            <GlobalRecurrenceForm
+              :state="recurrenceState"
+              :disabled="isReadOnly"
+            />
           </div>
-          <div v-if="!allDay" class="w-1/2 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">Start Time</label>
-            <div class="flex gap-2">
-              <USelect
-                v-model="startHour"
-                :items="hourOptions"
-                option-attribute="label"
-                value-attribute="value"
-                class="flex-1"
-                :ui="{ base: 'flex-1' }"
-                :disabled="isReadOnly"
-              />
-              <USelect
-                v-model="startMinute"
-                :items="minuteOptions"
-                option-attribute="label"
-                value-attribute="value"
-                class="flex-1"
-                :ui="{ base: 'flex-1' }"
-                :disabled="isReadOnly"
-              />
-              <USelect
-                v-model="startAmPm"
-                :items="amPmOptions"
-                option-attribute="label"
-                value-attribute="value"
-                class="flex-1"
-                :ui="{ base: 'flex-1' }"
+          <div
+            class="space-y-6"
+            :class="{ 'col-start-1 row-start-2': isTwoColumn }"
+          >
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Location</label>
+              <UInput
+                v-model="location"
+                placeholder="Event location"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
                 :disabled="isReadOnly"
               />
             </div>
-          </div>
-        </div>
-        <div class="flex gap-4">
-          <div class="w-1/2 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">End Date</label>
-            <UPopover>
-              <UButton
-                color="neutral"
-                variant="subtle"
-                icon="i-lucide-calendar"
-                class="w-full justify-between"
-                :disabled="isReadOnly"
-              >
-                <NuxtTime
-                  v-if="endDate"
-                  :datetime="endDate.toDate(getLocalTimeZone())"
-                  year="numeric"
-                  month="short"
-                  day="numeric"
-                />
-                <span v-else>Select a date</span>
-              </UButton>
-              <template #content>
-                <GlobalDatePicker
-                  :model-value="(endDate as DateValue)"
-                  :disabled="isReadOnly"
-                  @update:model-value="
-                    (value) => {
-                      if (value) endDate = value as DateValue;
-                    }
-                  "
-                />
-              </template>
-            </UPopover>
-          </div>
-          <div v-if="!allDay" class="w-1/2 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">End Time</label>
-            <div class="flex gap-2">
-              <USelect
-                v-model="endHour"
-                :items="hourOptions"
-                option-attribute="label"
-                value-attribute="value"
-                class="flex-1"
-                :ui="{ base: 'flex-1' }"
-                :disabled="isReadOnly"
-              />
-              <USelect
-                v-model="endMinute"
-                :items="minuteOptions"
-                option-attribute="label"
-                value-attribute="value"
-                class="flex-1"
-                :ui="{ base: 'flex-1' }"
-                :disabled="isReadOnly"
-              />
-              <USelect
-                v-model="endAmPm"
-                :items="amPmOptions"
-                option-attribute="label"
-                value-attribute="value"
-                class="flex-1"
-                :ui="{ base: 'flex-1' }"
-                :disabled="isReadOnly"
-              />
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <UCheckbox
-            v-model="allDay"
-            label="All day"
-            :disabled="isReadOnly"
-            @change="handleAllDayToggle"
-          />
-        </div>
-        <GlobalRecurrenceForm
-          :state="recurrenceState"
-          :disabled="isReadOnly"
-        />
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Location</label>
-          <UInput
-            v-model="location"
-            placeholder="Event location"
-            class="w-full"
-            :ui="{ base: 'w-full' }"
-            :disabled="isReadOnly"
-          />
-        </div>
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Users</label>
-          <div class="space-y-2">
-            <div class="text-sm text-muted mb-2">
-              {{
-                event?.id
-                  ? "Edit users for this event:"
-                  : "Select users for this event:"
-              }}
-            </div>
-            <div
-              v-if="showLockedUserMessage"
-              class="bg-info/10 text-info rounded-md px-3 py-2 text-sm mb-2"
-            >
-              Users for this event are based on integration settings and can be
-              changed in the
-              <NuxtLink to="/settings" class="text-primary">
-                settings page
-              </NuxtLink>.
-            </div>
-            <div
-              v-if="showMixedUserMessage"
-              class="bg-info/10 text-info rounded-md px-3 py-2 text-sm mb-2"
-            >
-              User selection only affects supported calendars. Other calendars
-              users are based on integration settings and can be changed in the
-              <NuxtLink to="/settings" class="text-primary">
-                settings page
-              </NuxtLink>.
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                v-for="user in users"
-                :key="user.id"
-                variant="ghost"
-                size="sm"
-                class="p-1"
-                :class="
-                  selectedUsers.includes(user.id)
-                    ? 'ring-2 ring-primary-500'
-                    : ''
-                "
-                :disabled="isReadOnly || !allowsUserSelection"
-                @click="
-                  selectedUsers.includes(user.id)
-                    ? (selectedUsers = selectedUsers.filter(
-                      (id) => id !== user.id,
-                    ))
-                    : selectedUsers.push(user.id)
-                "
-              >
-                <UAvatar
-                  :src="user.avatar || undefined"
-                  :alt="user.name"
-                  size="xl"
-                />
-              </UButton>
-            </div>
-            <div v-if="!users.length" class="text-sm text-muted">
-              No users found! Please add some users in the
-              <NuxtLink to="/settings" class="text-primary">
-                settings
-              </NuxtLink>
-              page.
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Users</label>
+              <div class="space-y-2">
+                <div class="text-sm text-muted mb-2">
+                  {{
+                    event?.id
+                      ? "Edit users for this event:"
+                      : "Select users for this event:"
+                  }}
+                </div>
+                <div
+                  v-if="showLockedUserMessage"
+                  class="bg-info/10 text-info rounded-md px-3 py-2 text-sm mb-2"
+                >
+                  Users for this event are based on integration settings and can be
+                  changed in the
+                  <NuxtLink to="/settings" class="text-primary">
+                    settings page
+                  </NuxtLink>.
+                </div>
+                <div
+                  v-if="showMixedUserMessage"
+                  class="bg-info/10 text-info rounded-md px-3 py-2 text-sm mb-2"
+                >
+                  User selection only affects supported calendars. Other calendars
+                  users are based on integration settings and can be changed in the
+                  <NuxtLink to="/settings" class="text-primary">
+                    settings page
+                  </NuxtLink>.
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <UButton
+                    v-for="user in users"
+                    :key="user.id"
+                    variant="ghost"
+                    size="sm"
+                    class="p-1"
+                    :class="
+                      selectedUsers.includes(user.id)
+                        ? 'ring-2 ring-primary-500'
+                        : ''
+                    "
+                    :disabled="isReadOnly || !allowsUserSelection"
+                    @click="
+                      selectedUsers.includes(user.id)
+                        ? (selectedUsers = selectedUsers.filter(
+                          (id) => id !== user.id,
+                        ))
+                        : selectedUsers.push(user.id)
+                    "
+                  >
+                    <UAvatar
+                      :src="user.avatar || undefined"
+                      :alt="user.name"
+                      size="xl"
+                    />
+                  </UButton>
+                </div>
+                <div v-if="!users.length" class="text-sm text-muted">
+                  No users found! Please add some users in the
+                  <NuxtLink to="/settings" class="text-primary">
+                    settings
+                  </NuxtLink>
+                  page.
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div class="flex justify-between p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-between border-t border-default"
+        :class="isShortScreen ? 'px-4 py-2' : 'p-4'"
+      >
         <UButton
           v-if="event?.id && canDelete && !isReadOnly"
           color="error"

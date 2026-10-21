@@ -3,8 +3,14 @@ import GlobalAppLoading from "~/components/global/globalAppLoading.vue";
 import GlobalDock from "~/components/global/globalDock.vue";
 import GlobalSideBar from "~/components/global/globalSideBar.vue";
 
-const dock = false;
 const { isLoading, loadingMessage, setLoading } = useGlobalLoading();
+const { navigation, isDockAutoHide } = useAppLayout();
+
+const navOffset = computed(() =>
+  navigation.value === "dock" && !isDockAutoHide.value
+    ? "calc(var(--dock-height) + env(safe-area-inset-bottom))"
+    : "0px",
+);
 
 setLoading(true);
 
@@ -20,26 +26,33 @@ onNuxtReady(() => {
       :loading-message="loadingMessage || ''"
     />
 
-    <div v-if="!dock" class="flex min-h-screen">
-      <GlobalSideBar />
-      <div class="flex flex-col flex-1">
-        <div class="flex-1">
-          <NuxtPage />
-        </div>
-      </div>
-    </div>
-    <div v-else class="flex min-h-screen">
-      <div class="flex flex-col flex-1">
-        <div class="flex-1">
-          <NuxtPage />
-        </div>
-        <GlobalDock />
-      </div>
+    <div
+      class="flex min-h-dvh"
+      :class="navigation === 'dock' ? 'flex-col' : 'flex-row'"
+      :style="{ '--app-nav-offset': navOffset }"
+    >
+      <GlobalSideBar v-if="navigation === 'sidebar'" />
+      <main
+        class="flex-1 min-w-0 pb-[var(--app-nav-offset)] pr-[env(safe-area-inset-right)]"
+        :class="
+          navigation === 'sidebar'
+            ? 'pl-[calc(var(--sidebar-width)+env(safe-area-inset-left))]'
+            : 'pl-[env(safe-area-inset-left)]'
+        "
+      >
+        <NuxtPage />
+      </main>
+      <GlobalDock v-if="navigation === 'dock'" />
     </div>
   </UApp>
 </template>
 
 <style>
+:root {
+  --dock-height: 50px;
+  --sidebar-width: 50px;
+}
+
 /* Hide scrollbars globally */
 * {
   scrollbar-width: none;

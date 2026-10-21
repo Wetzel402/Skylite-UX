@@ -120,6 +120,16 @@ export type TodoSortMode = "date" | "priority" | "alpha";
 
 export type TodoDueRange = "all" | "day" | "week" | "month";
 
+export type NavigationLayout = "auto" | "sidebar" | "dock";
+
+export type ResolvedNavigation = "sidebar" | "dock";
+
+export type NavigationItem = {
+  path: string;
+  label: string;
+  icon: string;
+};
+
 export type ClientPreferences = {
   colorMode?: "light" | "dark" | "system";
   notifications?: boolean;
@@ -127,14 +137,39 @@ export type ClientPreferences = {
   defaultView?: string;
   calendarView?: CalendarView;
   showWeekNumbers?: boolean;
+  navigationLayout?: NavigationLayout;
 };
 
-export const MAIN_VIEW_OPTIONS: { path: string; label: string }[] = [
-  { path: "/calendar", label: "Calendar" },
-  { path: "/toDoLists", label: "Todo Lists" },
-  { path: "/shoppingLists", label: "Shopping Lists" },
-  { path: "/mealplanner", label: "Meal Planner" },
+export const MAIN_VIEW_OPTIONS: NavigationItem[] = [
+  { path: "/calendar", label: "Calendar", icon: "i-lucide-calendar-days" },
+  { path: "/toDoLists", label: "Todo Lists", icon: "i-lucide-list-todo" },
+  { path: "/shoppingLists", label: "Shopping Lists", icon: "i-lucide-shopping-cart" },
+  { path: "/mealplanner", label: "Meal Planner", icon: "i-lucide-utensils" },
 ];
+
+export const NAVIGATION_ITEMS: NavigationItem[] = [
+  ...MAIN_VIEW_OPTIONS,
+  { path: "/settings", label: "Settings", icon: "i-lucide-settings" },
+];
+
+export const NAVIGATION_LAYOUT_OPTIONS: { value: NavigationLayout; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "sidebar", label: "Sidebar" },
+  { value: "dock", label: "Dock" },
+];
+
+export function resolveNavigation(
+  preference: NavigationLayout | undefined,
+  isPortrait: boolean,
+): ResolvedNavigation {
+  if (preference === "sidebar" || preference === "dock")
+    return preference;
+  return isPortrait ? "dock" : "sidebar";
+}
+
+export function isActivePath(currentPath: string, path: string) {
+  return currentPath.toLowerCase() === path.toLowerCase();
+}
 
 export const defaultClientPreferences: ClientPreferences = {
   colorMode: "system",
@@ -143,6 +178,7 @@ export const defaultClientPreferences: ClientPreferences = {
   defaultView: "/calendar",
   calendarView: "week",
   showWeekNumbers: false,
+  navigationLayout: "auto",
 };
 
 export const TODO_SORT_OPTIONS: { value: TodoSortMode; label: string }[] = [

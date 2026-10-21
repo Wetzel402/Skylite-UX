@@ -856,7 +856,6 @@ function getEventIntegrationCapabilities(
     <CalendarMainView
       :events="allEvents as CalendarEvent[]"
       :initial-view="initialCalendarView"
-      class="h-[calc(100vh-2rem)]"
       :get-integration-capabilities="getEventIntegrationCapabilities"
       @event-add="handleEventAdd"
       @event-update="handleEventUpdate"

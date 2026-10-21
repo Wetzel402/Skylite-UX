@@ -14,6 +14,7 @@ const props = defineProps<{
   onTouchStart?: (e: TouchEvent) => void;
   view: string;
   currentDay?: Date;
+  compact?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 
 const { getStableDate, parseStableDate } = useStableDate();
 const { preferences } = useClientPreferences();
+const isCompact = computed(() => !!props.compact && props.view === "month");
 const showWeekNumbers = computed(() => preferences.value?.showWeekNumbers ?? false);
 
 const displayStart = computed(() => {
@@ -129,10 +131,11 @@ function handleKeydown(e: KeyboardEvent) {
 
 <template>
   <div
-    class="focus-visible:border-ring focus-visible:ring-ring/50 flex w-full flex-col gap-1 rounded p-2 text-left transition outline-none focus-visible:ring-[3px] data-past-event:line-through data-past-event:opacity-90 cursor-pointer"
-    :class="
-      typeof eventColorClasses === 'string' ? eventColorClasses : className
-    "
+    class="focus-visible:border-ring focus-visible:ring-ring/50 flex w-full flex-col gap-1 rounded text-left transition outline-none focus-visible:ring-[3px] data-past-event:line-through data-past-event:opacity-90 cursor-pointer"
+    :class="[
+      isCompact ? 'px-1 py-0.5' : 'p-2',
+      typeof eventColorClasses === 'string' ? eventColorClasses : className,
+    ]"
     v-bind="
       typeof eventColorClasses === 'object' && eventColorClasses !== null
         ? eventColorClasses
@@ -147,13 +150,20 @@ function handleKeydown(e: KeyboardEvent) {
     @touchstart.passive="handleTouchStart"
     @keydown="handleKeydown"
   >
-    <div v-show="view === 'month'">
+    <div
+      v-show="view === 'month'"
+      :class="{ 'text-[11px] leading-tight': isCompact }"
+    >
       <div class="flex items-center justify-between min-w-0">
         <div class="flex items-center gap-1 min-w-0 flex-1">
           <span class="truncate flex-1">
             {{ event.title }}
           </span>
-          <span v-if="eventIsoWeek !== null" class="text-xs shrink-0">
+          <span
+            v-if="eventIsoWeek !== null"
+            class="shrink-0"
+            :class="isCompact ? 'text-[9px]' : 'text-xs'"
+          >
             Week {{ eventIsoWeek }}
           </span>
         </div>

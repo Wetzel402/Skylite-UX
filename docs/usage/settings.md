@@ -36,6 +36,12 @@ These options are stored in your browser only (in `localStorage`) and are not sy
 
 - **Color mode**: Light, Dark (if unset by the user it follows the system setting).
 - **Font**: System, Inclusive Sans, Noto Sans, EB Garamond, IBM Plex Mono, Ovo, or Handlee.
-- **Default view**: The page you land on when opening the app—Calendar, Todo Lists, Shopping Lists, or Meal Planner.
+- **Default view**: The page you land on when opening the app: Calendar, Todo Lists, Shopping Lists, or Meal Planner.
+- **Navigation layout**: Where the main navigation appears.
+  - **Auto** (default): A sidebar in landscape and a dock along the bottom in portrait. The layout switches automatically when the device rotates.
+  - **Sidebar**: Always use the sidebar, regardless of orientation.
+  - **Dock**: Always use the bottom dock, regardless of orientation.
+
+  On phone-sized screens, the dock hides while you scroll down and reappears when you scroll up, tap the bottom edge of the screen, or change pages.
 - **Show week numbers**: Toggle to show or hide week numbers for shift events.
 - **Notifications**: On or off. (this feature has not yet been implemented).
