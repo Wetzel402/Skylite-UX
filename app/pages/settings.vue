@@ -10,7 +10,11 @@ import type {
   User,
 } from "~/types/database";
 import type { IntegrationSetupDialog } from "~/types/integrations";
-import type { ConnectionTestResult, FontPreference } from "~/types/ui";
+import type {
+  ConnectionTestResult,
+  FontPreference,
+  NavigationLayout,
+} from "~/types/ui";
 
 import SettingsIntegrationDialog from "~/components/settings/settingsIntegrationDialog.vue";
 import SettingsUserDialog from "~/components/settings/settingsUserDialog.vue";
@@ -21,7 +25,12 @@ import {
   createIntegrationService,
   integrationRegistry,
 } from "~/types/integrations";
-import { FONT_OPTIONS, getFontStack, MAIN_VIEW_OPTIONS } from "~/types/ui";
+import {
+  FONT_OPTIONS,
+  getFontStack,
+  MAIN_VIEW_OPTIONS,
+  NAVIGATION_LAYOUT_OPTIONS,
+} from "~/types/ui";
 
 const { users, loading, error, createUser, deleteUser, updateUser }
   = useUsers();
@@ -81,6 +90,13 @@ const selectedDefaultView = computed({
   get: () => preferences.value?.defaultView ?? "/calendar",
   set(value: string) {
     updatePreferences({ defaultView: value });
+  },
+});
+
+const selectedNavigationLayout = computed({
+  get: () => preferences.value?.navigationLayout ?? "auto",
+  set(value: NavigationLayout) {
+    updatePreferences({ navigationLayout: value });
   },
 });
 
@@ -1037,6 +1053,24 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                   {{ MAIN_VIEW_OPTIONS.find(o => o.path === selectedDefaultView)?.label ?? "Calendar" }}
                 </template>
               </USelect>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-medium text-highlighted">
+                  Navigation layout
+                </p>
+                <p class="text-sm text-muted">
+                  Auto uses a sidebar in landscape and a dock in portrait
+                </p>
+              </div>
+              <USelect
+                v-model="selectedNavigationLayout"
+                :items="NAVIGATION_LAYOUT_OPTIONS"
+                value-key="value"
+                label-key="label"
+                :ui="{ content: 'min-w-fit' }"
+                aria-label="Select navigation layout"
+              />
             </div>
           </div>
         </div>

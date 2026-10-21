@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getDueRangeCutoff, getPriorityColor, isTodoWithinDueRange, isValidTimezone } from "~/types/ui";
+import { getDueRangeCutoff, getPriorityColor, isTodoWithinDueRange, isValidTimezone, resolveNavigation } from "~/types/ui";
 
 // A timezone with a fixed +05:30 offset and no DST, so cutoffs computed
 // against it can be asserted with plain arithmetic instead of depending on
@@ -143,5 +143,30 @@ describe("isTodoWithinDueRange", () => {
 
   it("returns false when the due date is after the cutoff", () => {
     expect(isTodoWithinDueRange(new Date("2026-08-20"), false, cutoff)).toBe(false);
+  });
+});
+
+describe("resolveNavigation", () => {
+  it("returns dock for auto in portrait", () => {
+    expect(resolveNavigation("auto", true)).toBe("dock");
+  });
+
+  it("returns sidebar for auto in landscape", () => {
+    expect(resolveNavigation("auto", false)).toBe("sidebar");
+  });
+
+  it("treats an undefined preference as auto", () => {
+    expect(resolveNavigation(undefined, true)).toBe("dock");
+    expect(resolveNavigation(undefined, false)).toBe("sidebar");
+  });
+
+  it("honors an explicit sidebar preference regardless of orientation", () => {
+    expect(resolveNavigation("sidebar", true)).toBe("sidebar");
+    expect(resolveNavigation("sidebar", false)).toBe("sidebar");
+  });
+
+  it("honors an explicit dock preference regardless of orientation", () => {
+    expect(resolveNavigation("dock", true)).toBe("dock");
+    expect(resolveNavigation("dock", false)).toBe("dock");
   });
 });

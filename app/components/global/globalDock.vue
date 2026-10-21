@@ -1,53 +1,73 @@
 <script setup lang="ts">
+import { useEventListener } from "@vueuse/core";
+
+import { isActivePath, NAVIGATION_ITEMS } from "~/types/ui";
+
+const SCROLL_THRESHOLD = 8;
+
 const route = useRoute();
-function isActivePath(path: string) {
-  return route.path === path;
-}
+const { isDockAutoHide, isDockHidden } = useAppLayout();
+
+let lastTarget: EventTarget | null = null;
+let lastTop = 0;
+
+useEventListener(
+  "scroll",
+  (event: Event) => {
+    if (!isDockAutoHide.value)
+      return;
+    const target = event.target;
+    const top
+      = target instanceof HTMLElement ? target.scrollTop : window.scrollY;
+    if (target !== lastTarget) {
+      lastTarget = target;
+      lastTop = top;
+      return;
+    }
+    if (top <= 0) {
+      lastTop = 0;
+      isDockHidden.value = false;
+      return;
+    }
+    const delta = top - lastTop;
+    if (Math.abs(delta) < SCROLL_THRESHOLD)
+      return;
+    lastTop = top;
+    isDockHidden.value = delta > 0;
+  },
+  { capture: true, passive: true },
+);
+
+watch(
+  () => route.path,
+  () => {
+    isDockHidden.value = false;
+  },
+);
 </script>
 
 <template>
-  <div
-    class="sticky bottom-0 left-0 w-full h-[50px] bg-default flex items-center justify-evenly px-4 z-100"
+  <nav
+    class="fixed inset-x-0 bottom-0 h-[calc(var(--dock-height)+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-default border-t border-default flex items-center justify-evenly px-4 z-50 transition-transform duration-300"
+    :class="isDockHidden ? 'translate-y-full' : 'translate-y-0'"
+    aria-label="Main navigation"
   >
     <UButton
-      :class="isActivePath('/calendar') ? 'text-primary' : 'text-default'"
-      to="/calendar"
+      v-for="item in NAVIGATION_ITEMS"
+      :key="item.path"
+      :class="isActivePath(route.path, item.path) ? 'text-primary' : 'text-default'"
+      :to="item.path"
       variant="ghost"
-      icon="i-lucide-calendar-days"
+      :icon="item.icon"
       size="xl"
-      aria-label="Calendar"
+      :aria-label="item.label"
     />
-    <UButton
-      :class="isActivePath('/todolists') ? 'text-primary' : 'text-default'"
-      to="/todolists"
-      variant="ghost"
-      icon="i-lucide-list-todo"
-      size="xl"
-      aria-label="Todo Lists"
-    />
-    <UButton
-      :class="isActivePath('/shoppinglists') ? 'text-primary' : 'text-default'"
-      to="/shoppinglists"
-      variant="ghost"
-      icon="i-lucide-shopping-cart"
-      size="xl"
-      aria-label="Shopping Lists"
-    />
-    <UButton
-      :class="isActivePath('/mealplanner') ? 'text-primary' : 'text-default'"
-      to="/mealplanner"
-      variant="ghost"
-      icon="i-lucide-utensils"
-      size="xl"
-      aria-label="Meal Planner"
-    />
-    <UButton
-      :class="isActivePath('/settings') ? 'text-primary' : 'text-default'"
-      to="/settings"
-      variant="ghost"
-      icon="i-lucide-settings"
-      size="xl"
-      aria-label="Settings"
-    />
-  </div>
+  </nav>
+  <button
+    v-if="isDockHidden"
+    type="button"
+    class="fixed inset-x-0 bottom-0 h-6 z-50"
+    aria-label="Show navigation"
+    @click="isDockHidden = false"
+  />
 </template>

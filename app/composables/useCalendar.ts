@@ -934,45 +934,29 @@ export function useCalendar() {
   }
 
   function scrollToDate(date: Date, view: "month" | "week" | "day" | "agenda") {
-    if (view === "month") {
-      const dateElement = document.querySelector(
-        `[data-date="${format(date, "yyyy-MM-dd")}"]`,
-      );
-      if (dateElement) {
-        const headerHeight = 80;
-        const padding = 20;
-        const elementPosition = dateElement.getBoundingClientRect().top;
-        const offsetPosition
-          = elementPosition + window.pageYOffset - headerHeight - padding;
+    if (view !== "month" && view !== "agenda")
+      return;
 
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-      }
-    }
-    else if (view === "agenda") {
-      const targetDate = format(date, "yyyy-MM-dd");
-      const dateElement = document.querySelector(`[data-date="${targetDate}"]`);
+    const targetDate = format(date, "yyyy-MM-dd");
+    const dateElement = document.querySelector(`[data-date="${targetDate}"]`);
+    const scrollableContainer = dateElement?.closest(".overflow-y-auto");
+    if (!dateElement || !scrollableContainer)
+      return;
 
-      if (dateElement) {
-        const scrollableContainer = dateElement.closest(".overflow-y-auto");
+    const stickyHeaderHeight = view === "month" ? 40 : 0;
+    const padding = 20;
+    const containerRect = scrollableContainer.getBoundingClientRect();
+    const elementRect = dateElement.getBoundingClientRect();
+    const scrollTop
+      = scrollableContainer.scrollTop
+        + (elementRect.top - containerRect.top)
+        - stickyHeaderHeight
+        - padding;
 
-        if (scrollableContainer) {
-          const containerRect = scrollableContainer.getBoundingClientRect();
-          const elementRect = dateElement.getBoundingClientRect();
-          const scrollTop
-            = scrollableContainer.scrollTop
-              + (elementRect.top - containerRect.top)
-              - 20;
-
-          scrollableContainer.scrollTo({
-            top: scrollTop,
-            behavior: "smooth",
-          });
-        }
-      }
-    }
+    scrollableContainer.scrollTo({
+      top: scrollTop,
+      behavior: "smooth",
+    });
   }
 
   function computedEventHeight(

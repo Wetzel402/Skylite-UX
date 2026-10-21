@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createReusableTemplate } from "@vueuse/core";
 import { isSameMonth } from "date-fns";
 
 import type { CalendarEvent } from "~/types/calendar";
@@ -26,6 +27,10 @@ const {
   getAgendaEventsForDay,
   getEventsForDateRange,
 } = useCalendar();
+
+const [DefineMiniCalendar, MiniCalendar] = createReusableTemplate();
+const { isPortrait, isPhone } = useAppLayout();
+const isMiniCalendarOpen = ref(false);
 
 const miniCalendarWeeks = computed(() =>
   getMiniCalendarWeeks(props.currentDate),
@@ -68,6 +73,7 @@ function isSelectedDate(date: Date) {
 
 function handleDateSelect(date: Date) {
   _handleDateSelect(date, emit);
+  isMiniCalendarOpen.value = false;
 }
 
 function handleEventClick(event: CalendarEvent, e: MouseEvent) {
@@ -76,65 +82,44 @@ function handleEventClick(event: CalendarEvent, e: MouseEvent) {
 </script>
 
 <template>
-  <div class="flex h-full w-full">
-    <div class="w-[40%] flex-shrink-0 border-r border-default">
-      <div class="p-4">
-        <div class="flex items-center justify-center mb-4">
-          <h2 class="text-lg font-semibold text-highlighted">
-            <NuxtTime
-              :datetime="currentDate"
-              month="long"
-              year="numeric"
-            />
-          </h2>
+  <DefineMiniCalendar>
+    <div class="p-4">
+      <div class="flex items-center justify-center mb-4">
+        <h2 class="text-lg font-semibold text-highlighted">
+          <NuxtTime
+            :datetime="currentDate"
+            month="long"
+            year="numeric"
+          />
+        </h2>
+      </div>
+      <div class="grid grid-cols-7 gap-1 mb-2">
+        <div
+          v-for="(day, index) in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
+          :key="index"
+          class="text-center text-xs font-medium text-muted py-2"
+        >
+          {{ day }}
         </div>
-        <div class="grid grid-cols-7 gap-1 mb-2">
+      </div>
+
+      <div class="grid grid-cols-7 gap-1">
+        <template
+          v-for="day in miniCalendarWeeks.flat()"
+          :key="day.toISOString()"
+        >
           <div
-            v-for="day in ['S', 'M', 'T', 'W', 'T', 'F', 'S']"
-            :key="day"
-            class="text-center text-xs font-medium text-muted py-2"
+            class="bg-muted rounded-lg shadow-sm border border-default aspect-square"
           >
-            {{ day }}
-          </div>
-        </div>
-
-        <div class="grid grid-cols-7 gap-1">
-          <template
-            v-for="day in miniCalendarWeeks.flat()"
-            :key="day.toISOString()"
-          >
-            <div
-              class="bg-muted rounded-lg shadow-sm border border-default aspect-square"
+            <UChip
+              v-if="getAllEventsForDay(monthEvents, day).length > 0"
+              inset
+              size="3xl"
+              :color="getChipColor(day)"
+              position="bottom-left"
+              class="w-full h-full flex items-center justify-center"
             >
-              <UChip
-                v-if="getAllEventsForDay(monthEvents, day).length > 0"
-                inset
-                size="3xl"
-                :color="getChipColor(day)"
-                position="bottom-left"
-                class="w-full h-full flex items-center justify-center"
-              >
-                <button
-                  type="button"
-                  class="w-full h-full flex items-center justify-center text-sm transition-colors rounded-md hover:bg-accented"
-                  :class="{
-                    'text-dimmed': !isSameMonth(day, currentDate),
-                    'text-highlighted':
-                      isSameMonth(day, currentDate)
-                      && !isToday(day)
-                      && !isSelectedDate(day),
-                    'bg-primary text-white font-semibold': isSelectedDate(day),
-                    'bg-info/10 text-info font-medium':
-                      isToday(day) && !isSelectedDate(day),
-                  }"
-                  @click="handleDateSelect(day)"
-                >
-                  <NuxtTime :datetime="day" day="numeric" />
-                </button>
-              </UChip>
-
               <button
-                v-else
                 type="button"
                 class="w-full h-full flex items-center justify-center text-sm transition-colors rounded-md hover:bg-accented"
                 :class="{
@@ -151,14 +136,50 @@ function handleEventClick(event: CalendarEvent, e: MouseEvent) {
               >
                 <NuxtTime :datetime="day" day="numeric" />
               </button>
-            </div>
-          </template>
-        </div>
+            </UChip>
+
+            <button
+              v-else
+              type="button"
+              class="w-full h-full flex items-center justify-center text-sm transition-colors rounded-md hover:bg-accented"
+              :class="{
+                'text-dimmed': !isSameMonth(day, currentDate),
+                'text-highlighted':
+                  isSameMonth(day, currentDate)
+                  && !isToday(day)
+                  && !isSelectedDate(day),
+                'bg-primary text-white font-semibold': isSelectedDate(day),
+                'bg-info/10 text-info font-medium':
+                  isToday(day) && !isSelectedDate(day),
+              }"
+              @click="handleDateSelect(day)"
+            >
+              <NuxtTime :datetime="day" day="numeric" />
+            </button>
+          </div>
+        </template>
       </div>
     </div>
-    <div class="w-[60%] flex-1">
+  </DefineMiniCalendar>
+
+  <div
+    class="flex h-full w-full"
+    :class="isPortrait ? 'flex-col' : 'flex-row'"
+  >
+    <div
+      v-if="!isPhone"
+      class="flex-shrink-0 border-default"
+      :class="isPortrait ? 'w-full border-b' : 'w-[40%] border-r'"
+    >
+      <div :class="{ 'mx-auto max-w-md': isPortrait }">
+        <MiniCalendar />
+      </div>
+    </div>
+    <div class="flex-1" :class="isPortrait ? 'w-full' : 'w-[60%]'">
       <div class="h-full">
-        <div class="flex items-center p-4 border-b border-default">
+        <div
+          class="flex items-center justify-between p-4 border-b border-default"
+        >
           <div class="flex items-center gap-3">
             <div
               class="inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold"
@@ -175,6 +196,20 @@ function handleEventClick(event: CalendarEvent, e: MouseEvent) {
               </h3>
             </div>
           </div>
+          <UPopover v-if="isPhone" v-model:open="isMiniCalendarOpen">
+            <UButton
+              icon="i-lucide-calendar-search"
+              color="neutral"
+              variant="ghost"
+              size="xl"
+              aria-label="Pick a date"
+            />
+            <template #content>
+              <div class="w-[min(20rem,calc(100vw-2rem))]">
+                <MiniCalendar />
+              </div>
+            </template>
+          </UPopover>
         </div>
         <div class="p-4">
           <div v-show="todaysEvents.length === 0" class="text-center py-8">

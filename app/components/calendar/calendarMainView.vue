@@ -254,9 +254,11 @@ function getDaysForAgenda(date: Date) {
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-2rem)] w-full flex-col rounded-lg">
+  <div
+    class="flex h-[calc(100dvh_-_2rem_-_var(--app-nav-offset))] w-full flex-col rounded-lg"
+  >
     <div
-      class="py-5 sm:px-4 sticky top-0 z-40 bg-default border-b border-default"
+      class="px-2 py-3 sm:px-4 sm:py-5 sticky top-0 z-40 bg-default border-b border-default"
     >
       <GlobalDateHeader
         :show-navigation="true"
@@ -270,13 +272,12 @@ function getDaysForAgenda(date: Date) {
         @date-change="(newDate) => (currentDate = newDate)"
       />
     </div>
-    <div class="flex flex-1 flex-col min-h-0">
+    <div class="flex flex-1 flex-col min-h-0 overflow-y-auto">
       <GlobalMonthView
         v-if="view === 'month'"
         :weeks="getWeeksForMonth(currentDate)"
         :events="filteredEvents"
         :is-current-month="isCurrentMonth"
-        cell-id="month-cell"
         @event-click="handleEventSelect"
         @event-create="handleEventCreate"
       />

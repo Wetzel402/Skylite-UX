@@ -24,6 +24,7 @@
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
   },
   "containerEnv": {
-    "DATABASE_URL": "postgresql://postgres:postgres@db:5432/postgres"
+    "DATABASE_URL": "postgresql://postgres:postgres@db:5432/postgres",
+    "CHOKIDAR_USEPOLLING": "${localEnv:OS}"
   }
 }
