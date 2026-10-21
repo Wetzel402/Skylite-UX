@@ -97,6 +97,11 @@ function createAppLayout() {
     () => navigation.value === "dock" && isPhone.value,
   );
 
+  watch(isDockAutoHide, (enabled) => {
+    if (!enabled)
+      isDockHidden.value = false;
+  });
+
   return {
     isPortrait,
     isPhone,

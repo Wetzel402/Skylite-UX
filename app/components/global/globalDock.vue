@@ -44,11 +44,6 @@ watch(
     isDockHidden.value = false;
   },
 );
-
-watch(isDockAutoHide, (enabled) => {
-  if (!enabled)
-    isDockHidden.value = false;
-});
 </script>
 
 <template>
