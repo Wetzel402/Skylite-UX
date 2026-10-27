@@ -18,7 +18,7 @@ import type {
 
 import SettingsIntegrationDialog from "~/components/settings/settingsIntegrationDialog.vue";
 import SettingsUserDialog from "~/components/settings/settingsUserDialog.vue";
-import { useClientPreferences } from "~/composables/useClientPreferences";
+import { useAppLayout, useClientPreferences } from "~/composables/useClientPreferences";
 import { integrationServices } from "~/plugins/02.appInit";
 import { getSlogan } from "~/types/global";
 import {
@@ -52,6 +52,7 @@ const {
 } = useSyncManager();
 
 const { preferences, updatePreferences } = useClientPreferences();
+const { isWideLandscape } = useAppLayout();
 
 const isClient = ref(false);
 onMounted(() => {
@@ -701,17 +702,20 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
 <template>
   <div class="flex w-full flex-col rounded-lg">
     <div
-      class="py-5 sm:px-4 sticky top-0 z-40 bg-default border-b border-default"
+      class="px-2 py-3 sm:px-4 sm:py-5 sticky top-0 z-40 bg-default border-b border-default"
     >
       <GlobalDateHeader />
     </div>
 
-    <div class="flex-1 bg-default p-6">
-      <div class="max-w-4xl mx-auto">
+    <div class="flex-1 bg-default p-3 sm:p-6">
+      <div
+        class="mx-auto"
+        :class="isWideLandscape ? 'max-w-[96rem] grid grid-cols-2 gap-6' : 'max-w-4xl space-y-6'"
+      >
         <div
-          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+          class="min-w-0 bg-default rounded-lg shadow-sm border border-default p-4 sm:p-6"
         >
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
             <div>
               <h2 class="text-lg font-semibold text-highlighted">
                 Users
@@ -751,7 +755,7 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
           </div>
 
           <div v-else>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-4">
               <div
                 v-for="user in users"
                 :key="user.id"
@@ -791,9 +795,9 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
         </div>
 
         <div
-          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+          class="min-w-0 bg-default rounded-lg shadow-sm border border-default p-4 sm:p-6"
         >
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
             <div>
               <h2 class="text-lg font-semibold text-highlighted">
                 Integrations
@@ -805,7 +809,7 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
           </div>
 
           <div class="border-b border-default mb-6">
-            <nav class="-mb-px flex space-x-8">
+            <nav class="-mb-px flex gap-6 overflow-x-auto" aria-label="Integration types">
               <button
                 v-for="type in availableIntegrationTypes"
                 :key="type"
@@ -863,20 +867,20 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
           </div>
 
           <div v-else>
-            <div class="space-y-4">
+            <div class="grid grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-4">
               <div
                 v-for="integration in filteredIntegrations"
                 :key="integration.id"
-                class="flex items-center justify-between p-4 rounded-lg border"
+                class="flex items-center justify-between gap-3 p-4 rounded-lg border"
                 :class="[
                   integration.enabled
                     ? 'border-primary bg-primary/10'
                     : 'border-default bg-default',
                 ]"
               >
-                <div class="flex items-center gap-3">
+                <div class="flex flex-1 min-w-0 items-center gap-3">
                   <div
-                    class="w-10 h-10 rounded-full flex items-center justify-center text-inverted"
+                    class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-inverted"
                     :class="[integration.enabled ? 'bg-accented' : 'bg-muted']"
                   >
                     <img
@@ -893,8 +897,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                     />
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <p class="font-medium text-highlighted">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p class="font-medium text-highlighted truncate max-w-full">
                         {{ integration.name }}
                       </p>
                       <UBadge
@@ -915,7 +919,7 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                     </p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex shrink-0 items-center gap-2">
                   <USwitch
                     :model-value="integration.enabled"
                     color="primary"
@@ -941,14 +945,15 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
         </div>
 
         <div
-          class="bg-default rounded-lg shadow-sm border border-default p-6 mb-6"
+          class="min-w-0 bg-default rounded-lg shadow-sm border border-default p-4 sm:p-6"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           <h2 class="text-lg font-semibold text-highlighted mb-4">
             Application Settings
           </h2>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div>
+          <div :class="isWideLandscape ? 'grid grid-cols-2 gap-x-8 gap-y-4' : 'space-y-4'">
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div class="min-w-0">
                 <p class="font-medium text-highlighted">
                   Dark Mode
                 </p>
@@ -965,8 +970,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                 aria-label="Toggle dark mode"
               />
             </div>
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div class="min-w-0">
                 <p class="font-medium text-highlighted">
                   Notifications
                 </p>
@@ -983,8 +988,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                 aria-label="Toggle notifications"
               />
             </div>
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div class="min-w-0">
                 <p class="font-medium text-highlighted">
                   Font
                 </p>
@@ -1016,8 +1021,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                 </template>
               </USelect>
             </div>
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div class="min-w-0">
                 <p class="font-medium text-highlighted">
                   Show week numbers
                 </p>
@@ -1032,8 +1037,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                 aria-label="Toggle week numbers"
               />
             </div>
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div class="min-w-0">
                 <p class="font-medium text-highlighted">
                   Default view
                 </p>
@@ -1054,8 +1059,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
                 </template>
               </USelect>
             </div>
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <div class="min-w-0">
                 <p class="font-medium text-highlighted">
                   Navigation layout
                 </p>
@@ -1075,7 +1080,10 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
           </div>
         </div>
 
-        <div class="bg-default rounded-lg shadow-sm border border-default p-6">
+        <div
+          class="min-w-0 bg-default rounded-lg shadow-sm border border-default p-4 sm:p-6"
+          :class="{ 'col-span-2': isWideLandscape }"
+        >
           <h2 class="text-lg font-semibold text-highlighted mb-4">
             About
           </h2>

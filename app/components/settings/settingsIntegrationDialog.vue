@@ -27,6 +27,9 @@ const emit = defineEmits<{
   (e: "openSetup", integrationId: string): void;
 }>();
 
+const { isWideLandscape, dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(425px,calc(100vw-1rem))]"));
+
 const INTEGRATION_COLUMN_FIELDS = ["apiKey", "baseUrl"];
 
 const show = ref(false);
@@ -438,11 +441,13 @@ function handleDelete() {
     @click="emit('close')"
   >
     <div
-      class="w-[425px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       @click.stop
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
       >
         <h3 class="text-base font-semibold leading-6">
           {{ integration?.id ? "Edit Integration" : "Add Integration" }}
@@ -457,10 +462,15 @@ function handleDelete() {
         />
       </div>
 
-      <form class="p-4 space-y-6" @submit.prevent="handleSave">
+      <form
+        class="flex-1 min-h-0 overflow-y-auto p-4"
+        :class="isWideLandscape ? 'grid grid-cols-2 gap-6 items-start' : 'space-y-6'"
+        @submit.prevent="handleSave"
+      >
         <div
           v-if="error"
           class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           {{ error }}
         </div>
@@ -468,6 +478,7 @@ function handleDelete() {
         <div
           v-if="isTestingConnection"
           class="bg-info/10 text-info rounded-md px-3 py-2 text-sm flex items-center gap-2"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           <UIcon name="i-lucide-loader-2" class="animate-spin h-4 w-4" />
           {{ props.connectionTestResult?.message || "Testing connection..." }}
@@ -477,6 +488,7 @@ function handleDelete() {
           v-if="
             props.connectionTestResult && !props.connectionTestResult.isLoading
           "
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           <div
             v-if="props.connectionTestResult.success"
@@ -503,6 +515,7 @@ function handleDelete() {
         <div
           v-if="integration?.id && integrationNeedsReauth"
           class="bg-warning/10 text-warning rounded-md px-3 py-2 text-sm"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           <div class="flex items-start gap-2">
             <UIcon
@@ -524,6 +537,7 @@ function handleDelete() {
         <div
           v-if="integration?.id"
           class="bg-info/10 text-info rounded-md px-3 py-2 text-sm"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           <div class="flex items-start gap-2">
             <UIcon name="i-lucide-info" class="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -683,7 +697,10 @@ function handleDelete() {
         </div>
       </form>
 
-      <div class="flex justify-between p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-between border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           v-if="integration?.id"
           color="error"

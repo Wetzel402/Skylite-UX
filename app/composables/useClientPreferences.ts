@@ -96,6 +96,15 @@ function createAppLayout() {
   const isDockAutoHide = computed(
     () => navigation.value === "dock" && isPhone.value,
   );
+  const isWideLandscape = computed(() => !isPortrait.value && isWideScreen.value);
+  const dialogBarClass = computed(() => isShortScreen.value ? "px-4 py-2" : "p-4");
+
+  function dialogPanelClass(widthClass: string) {
+    if (isPhoneDevice.value)
+      return "w-full h-dvh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]";
+    const width = isWideLandscape.value ? "w-[min(56rem,calc(100vw-2rem))]" : widthClass;
+    return `${width} max-h-[90dvh] rounded-lg border border-default shadow-lg`;
+  }
 
   watch(isDockAutoHide, (enabled) => {
     if (!enabled)
@@ -109,9 +118,12 @@ function createAppLayout() {
     isWideScreen,
     isPhoneDevice,
     isLargeScreen,
+    isWideLandscape,
     navigation,
     isDockAutoHide,
     isDockHidden,
+    dialogPanelClass,
+    dialogBarClass,
   };
 }
 

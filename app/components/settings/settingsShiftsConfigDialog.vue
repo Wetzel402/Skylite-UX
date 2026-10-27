@@ -20,6 +20,9 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
+const { isWideLandscape, dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(42rem,calc(100vw-1rem))]"));
+
 const { convert12To24, convert24To12, isSameTime } = useTimePicker();
 
 type ShiftTemplateSlot = {
@@ -193,6 +196,12 @@ const selectedTemplate = computed(() =>
 );
 
 const editingAssignmentId = ref<string | null>(null);
+
+const showConfiguredList = computed(() =>
+  isWideLandscape.value
+    ? !editingAssignmentId.value
+    : !selectedTemplateId.value || !!editingAssignmentId.value,
+);
 
 type EditingSlot = {
   id: string;
@@ -668,10 +677,14 @@ async function deleteConfiguredShift(assignmentId: string) {
     @click="emit('close')"
   >
     <div
-      class="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       @click.stop
     >
-      <div class="flex items-center justify-between p-4 border-b border-default">
+      <div
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
+      >
         <h3 class="text-base font-semibold leading-6">
           Configure Shifts – {{ integration?.name ?? "Integration" }}
         </h3>
@@ -684,12 +697,12 @@ async function deleteConfiguredShift(assignmentId: string) {
         />
       </div>
 
-      <div class="p-4 space-y-6">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         <div v-if="displayError" class="bg-error/10 text-error rounded-md px-3 py-2 text-sm">
           {{ displayError }}
         </div>
 
-        <div>
+        <div :class="{ 'grid grid-cols-2 gap-6 items-start': isWideLandscape }">
           <div v-if="!editingAssignmentId">
             <h4 class="font-medium text-highlighted mb-2">
               Add shift
@@ -746,20 +759,20 @@ async function deleteConfiguredShift(assignmentId: string) {
                   class="space-y-3"
                 >
                   <label class="block text-sm font-medium text-highlighted">Shifts</label>
-                  <div class="space-y-2">
+                  <div class="@container space-y-2">
                     <div
                       v-for="(seg, idx) in editableSegments"
                       :key="idx"
-                      class="flex flex-wrap items-center gap-2"
+                      class="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] @sm:grid-cols-[72px_auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2"
                     >
-                      <span class="text-sm font-medium text-highlighted min-w-[72px]">{{ seg.label }}</span>
+                      <span class="col-span-3 @sm:col-span-1 text-sm font-medium text-highlighted">{{ seg.label }}</span>
                       <UInput
                         :model-value="seg.count"
                         type="number"
                         min="1"
                         max="99"
                         step="1"
-                        class="w-16"
+                        class="w-16 col-start-1 @sm:col-start-2"
                         @update:model-value="(v: number | string) => updateSegmentCount(idx, v)"
                       />
                       <span v-if="seg.preset !== 'no-shift'" class="text-muted">×</span>
@@ -769,7 +782,7 @@ async function deleteConfiguredShift(assignmentId: string) {
                         :items="slotPresetSelectItems"
                         option-attribute="label"
                         value-attribute="value"
-                        class="min-w-[140px]"
+                        class="w-full"
                         @update:model-value="(v: string) => updateSegmentPreset(idx, v)"
                       />
                       <UPopover v-if="seg.preset !== 'no-shift'">
@@ -796,70 +809,75 @@ async function deleteConfiguredShift(assignmentId: string) {
                           />
                         </template>
                       </UPopover>
-                      <div
-                        v-if="seg.preset === 'custom'"
-                        class="flex items-center gap-1 text-xs text-muted"
-                      >
-                        <span>Start:</span>
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.startHour ?? 9"
-                          :items="hourOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startHour', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.startMinute ?? 0"
-                          :items="minuteOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startMinute', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.startAmPm ?? 'AM'"
-                          :items="amPmOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'startAmPm', v)"
-                        />
-                        <span>End:</span>
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.endHour ?? 5"
-                          :items="hourOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endHour', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.endMinute ?? 0"
-                          :items="minuteOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endMinute', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.endAmPm ?? 'PM'"
-                          :items="amPmOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'endAmPm', v)"
-                        />
-                      </div>
                       <UButton
                         v-if="selectedTemplateId === 'custom' && editableSegments.length > 1"
                         color="neutral"
                         variant="ghost"
                         size="xs"
                         icon="i-lucide-trash"
+                        class="col-start-4 row-start-1 justify-self-end @sm:col-start-6"
                         :aria-label="`Remove ${seg.label}`"
                         @click="removeSegment(idx)"
                       />
+                      <div
+                        v-if="seg.preset === 'custom'"
+                        class="col-span-4 @sm:col-span-6 flex flex-col gap-1 text-xs text-muted"
+                      >
+                        <div class="flex items-center gap-1">
+                          <span class="w-9 shrink-0">Start:</span>
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.startHour ?? 9"
+                            :items="hourOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startHour', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.startMinute ?? 0"
+                            :items="minuteOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startMinute', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.startAmPm ?? 'AM'"
+                            :items="amPmOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-20"
+                            @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'startAmPm', v)"
+                          />
+                        </div>
+                        <div class="flex items-center gap-1">
+                          <span class="w-9 shrink-0">End:</span>
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.endHour ?? 5"
+                            :items="hourOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endHour', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.endMinute ?? 0"
+                            :items="minuteOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endMinute', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.endAmPm ?? 'PM'"
+                            :items="amPmOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-20"
+                            @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'endAmPm', v)"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <p class="text-sm text-muted">
@@ -951,7 +969,10 @@ async function deleteConfiguredShift(assignmentId: string) {
             </div>
           </div>
 
-          <template v-if="!selectedTemplateId || editingAssignmentId">
+          <div
+            v-if="showConfiguredList"
+            :class="{ 'col-start-2 row-start-1': isWideLandscape }"
+          >
             <h4 class="font-medium text-highlighted mb-2">
               Configured shifts
             </h4>
@@ -960,17 +981,17 @@ async function deleteConfiguredShift(assignmentId: string) {
                 v-for="a in assignments"
                 v-show="a.id !== editingAssignmentId"
                 :key="a.id"
-                class="flex items-center justify-between p-4 rounded-lg border border-default"
+                class="flex items-center justify-between gap-3 p-4 rounded-lg border border-default"
               >
-                <div class="flex items-center gap-3">
+                <div class="flex flex-1 min-w-0 items-center gap-3">
                   <div
                     class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
                     :style="{
                       backgroundColor: a.shiftRotation.color ?? DEFAULT_ROTATION_COLOR,
                     }"
                   />
-                  <div>
-                    <p class="font-medium text-highlighted">
+                  <div class="min-w-0">
+                    <p class="font-medium text-highlighted truncate">
                       {{ a.shiftRotation.name }}
                     </p>
                     <p class="text-sm text-muted">
@@ -982,7 +1003,7 @@ async function deleteConfiguredShift(assignmentId: string) {
                     </p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex shrink-0 items-center gap-2">
                   <UButton
                     variant="ghost"
                     size="sm"
@@ -1001,149 +1022,160 @@ async function deleteConfiguredShift(assignmentId: string) {
                 </div>
               </div>
               <p v-if="assignments.length === 0" class="text-muted text-sm py-2">
-                No configured shifts yet. Select a pattern and fill the form above to add one.
+                No configured shifts yet. Select a pattern to add one.
               </p>
-              <div
-                v-if="editingAssignmentId"
-                class="rounded-lg border border-default p-4 space-y-4"
-              >
-                <h5 class="font-medium text-highlighted">
-                  Editing {{ newRotationName || 'pattern' }}
-                </h5>
-                <div class="space-y-2">
-                  <label class="block text-sm font-medium text-highlighted">Pattern name</label>
-                  <UInput
-                    v-model="newRotationName"
-                    placeholder="Pattern name"
-                    class="w-full"
+            </div>
+          </div>
+          <div
+            v-if="editingAssignmentId"
+            class="rounded-lg border border-default p-4"
+            :class="isWideLandscape ? 'col-span-2 grid grid-cols-2 gap-x-6 gap-y-4 items-start' : 'mt-4 space-y-4'"
+          >
+            <h5
+              class="font-medium text-highlighted"
+              :class="{ 'col-span-2': isWideLandscape }"
+            >
+              Editing {{ newRotationName || 'pattern' }}
+            </h5>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Pattern name</label>
+              <UInput
+                v-model="newRotationName"
+                placeholder="Pattern name"
+                class="w-full"
+              />
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Starts</label>
+              <UPopover>
+                <UButton
+                  color="neutral"
+                  variant="subtle"
+                  icon="i-lucide-calendar"
+                  class="w-full justify-between"
+                >
+                  <NuxtTime
+                    v-if="formStartDate"
+                    :datetime="formStartDate.toDate(getLocalTimeZone())"
+                    year="numeric"
+                    month="short"
+                    day="numeric"
                   />
-                </div>
-                <div class="space-y-2">
-                  <label class="block text-sm font-medium text-highlighted">Starts</label>
+                  <span v-else>Select a date</span>
+                </UButton>
+                <template #content>
+                  <GlobalDatePicker
+                    :model-value="formStartDateValue"
+                    @update:model-value="onStartDateSelect"
+                  />
+                </template>
+              </UPopover>
+              <p class="text-sm text-muted">
+                The first day of the pattern.
+              </p>
+            </div>
+            <div
+              v-if="editingSlotTypes.length > 0"
+              class="space-y-3"
+              :class="{ 'col-start-2 row-start-2 row-span-3': isWideLandscape }"
+            >
+              <label class="block text-sm font-medium text-highlighted">Slot colors</label>
+              <div class="space-y-2">
+                <div
+                  v-for="(type, typeIdx) in editingSlotTypes"
+                  :key="type.key"
+                  class="flex flex-wrap items-center gap-2"
+                >
+                  <span class="text-sm font-medium text-highlighted min-w-[120px]">
+                    {{ type.label || `${type.startTime}–${type.endTime}` }}
+                  </span>
                   <UPopover>
                     <UButton
                       color="neutral"
-                      variant="subtle"
-                      icon="i-lucide-calendar"
-                      class="w-full justify-between"
+                      variant="outline"
+                      size="sm"
+                      aria-label="Slot color"
                     >
-                      <NuxtTime
-                        v-if="formStartDate"
-                        :datetime="formStartDate.toDate(getLocalTimeZone())"
-                        year="numeric"
-                        month="short"
-                        day="numeric"
-                      />
-                      <span v-else>Select a date</span>
+                      <template #leading>
+                        <span
+                          :style="{
+                            backgroundColor: type.color ?? DEFAULT_ROTATION_COLOR,
+                          }"
+                          class="size-3 rounded-full"
+                        />
+                      </template>
                     </UButton>
                     <template #content>
-                      <GlobalDatePicker
-                        :model-value="formStartDateValue"
-                        @update:model-value="onStartDateSelect"
+                      <UColorPicker
+                        :model-value="type.color ?? DEFAULT_ROTATION_COLOR"
+                        class="p-2"
+                        @update:model-value="(v: string | undefined) => updateEditingSlotTypeColor(typeIdx, v ?? null)"
                       />
                     </template>
                   </UPopover>
-                  <p class="text-sm text-muted">
-                    The first day of the pattern.
-                  </p>
-                </div>
-                <div
-                  v-if="editingSlotTypes.length > 0"
-                  class="space-y-3"
-                >
-                  <label class="block text-sm font-medium text-highlighted">Slot colors</label>
-                  <div class="space-y-2">
-                    <div
-                      v-for="(type, typeIdx) in editingSlotTypes"
-                      :key="type.key"
-                      class="flex flex-wrap items-center gap-2"
-                    >
-                      <span class="text-sm font-medium text-highlighted min-w-[120px]">
-                        {{ type.label || `${type.startTime}–${type.endTime}` }}
-                      </span>
-                      <UPopover>
-                        <UButton
-                          color="neutral"
-                          variant="outline"
-                          size="sm"
-                          aria-label="Slot color"
-                        >
-                          <template #leading>
-                            <span
-                              :style="{
-                                backgroundColor: type.color ?? DEFAULT_ROTATION_COLOR,
-                              }"
-                              class="size-3 rounded-full"
-                            />
-                          </template>
-                        </UButton>
-                        <template #content>
-                          <UColorPicker
-                            :model-value="type.color ?? DEFAULT_ROTATION_COLOR"
-                            class="p-2"
-                            @update:model-value="(v: string | undefined) => updateEditingSlotTypeColor(typeIdx, v ?? null)"
-                          />
-                        </template>
-                      </UPopover>
-                    </div>
-                  </div>
-                </div>
-                <div class="space-y-2">
-                  <label class="block text-sm font-medium text-highlighted">End date (optional)</label>
-                  <div class="flex items-center gap-2">
-                    <UPopover class="flex-1">
-                      <UButton
-                        color="neutral"
-                        variant="subtle"
-                        icon="i-lucide-calendar"
-                        class="w-full justify-between"
-                      >
-                        <NuxtTime
-                          v-if="formEndDate"
-                          :datetime="formEndDate.toDate(getLocalTimeZone())"
-                          year="numeric"
-                          month="short"
-                          day="numeric"
-                        />
-                        <span v-else>Select a date</span>
-                      </UButton>
-                      <template #content>
-                        <GlobalDatePicker
-                          :model-value="formEndDateValue"
-                          @update:model-value="(value: DateValue | null) => { formEndDate = value; }"
-                        />
-                      </template>
-                    </UPopover>
-                    <UButton
-                      v-if="formEndDate"
-                      icon="i-lucide-x"
-                      color="neutral"
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Clear end date"
-                      @click="formEndDate = null"
-                    />
-                  </div>
-                </div>
-                <div class="flex gap-2">
-                  <UButton size="sm" @click="saveConfiguredShift">
-                    Save
-                  </UButton>
-                  <UButton
-                    size="sm"
-                    variant="ghost"
-                    @click="closeForm"
-                  >
-                    Cancel
-                  </UButton>
                 </div>
               </div>
             </div>
-          </template>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-highlighted">End date (optional)</label>
+              <div class="flex items-center gap-2">
+                <UPopover class="flex-1">
+                  <UButton
+                    color="neutral"
+                    variant="subtle"
+                    icon="i-lucide-calendar"
+                    class="w-full justify-between"
+                  >
+                    <NuxtTime
+                      v-if="formEndDate"
+                      :datetime="formEndDate.toDate(getLocalTimeZone())"
+                      year="numeric"
+                      month="short"
+                      day="numeric"
+                    />
+                    <span v-else>Select a date</span>
+                  </UButton>
+                  <template #content>
+                    <GlobalDatePicker
+                      :model-value="formEndDateValue"
+                      @update:model-value="(value: DateValue | null) => { formEndDate = value; }"
+                    />
+                  </template>
+                </UPopover>
+                <UButton
+                  v-if="formEndDate"
+                  icon="i-lucide-x"
+                  color="neutral"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Clear end date"
+                  @click="formEndDate = null"
+                />
+              </div>
+            </div>
+            <div
+              class="flex gap-2"
+              :class="{ 'col-span-2': isWideLandscape }"
+            >
+              <UButton size="sm" @click="saveConfiguredShift">
+                Save
+              </UButton>
+              <UButton
+                size="sm"
+                variant="ghost"
+                @click="closeForm"
+              >
+                Cancel
+              </UButton>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="p-4 border-t border-default">
+      <div
+        class="shrink-0 border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           color="neutral"
           variant="ghost"

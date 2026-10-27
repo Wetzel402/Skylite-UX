@@ -15,6 +15,9 @@ const emit = defineEmits<{
   (e: "calendarsDisabled", calendarIds: string[]): void;
 }>();
 
+const { dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(600px,calc(100vw-1rem))]"));
+
 const { users, fetchUsers } = useUsers();
 
 const pending = ref(false);
@@ -173,11 +176,13 @@ async function handleSave() {
     @click="emit('close')"
   >
     <div
-      class="w-[600px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       @click.stop
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
       >
         <h3 class="text-base font-semibold leading-6">
           Select Calendars
@@ -192,7 +197,7 @@ async function handleSave() {
         />
       </div>
 
-      <div class="p-4 space-y-4">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         <div
           v-if="error"
           class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
@@ -215,71 +220,75 @@ async function handleSave() {
           No calendars found
         </div>
 
-        <div
-          v-for="config in calendarConfigs"
-          :key="config.id"
-          class="border border-default rounded-lg p-4 space-y-3"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <UCheckbox v-model="config.enabled" :label="config.name" />
-            </div>
-          </div>
-
+        <div class="grid grid-cols-[repeat(auto-fill,minmax(min(18rem,100%),1fr))] gap-4">
           <div
-            v-if="config.accessRole === 'read'"
-            class="bg-warning/10 text-warning rounded-md px-3 py-2 text-sm flex items-center gap-2"
+            v-for="config in calendarConfigs"
+            :key="config.id"
+            class="min-w-0 border border-default rounded-lg p-4 space-y-3"
           >
-            <UIcon name="i-lucide-alert-triangle" class="h-4 w-4" />
-            <span>Read only: events cannot be created or edited</span>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <UCheckbox v-model="config.enabled" :label="config.name" />
+              </div>
+            </div>
+
+            <div
+              v-if="config.accessRole === 'read'"
+              class="bg-warning/10 text-warning rounded-md px-3 py-2 text-sm flex items-center gap-2"
+            >
+              <UIcon name="i-lucide-alert-triangle" class="h-4 w-4" />
+              <span>Read only: events cannot be created or edited</span>
+            </div>
+
+            <template v-if="config.enabled">
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-highlighted">Assigned Users</label>
+                <USelect
+                  v-model="config.user"
+                  :items="users.map((u) => ({ label: u.name, value: u.id }))"
+                  placeholder="Optional: Select user(s)"
+                  class="w-full"
+                  multiple
+                />
+              </div>
+
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-highlighted">Event Color</label>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <UPopover>
+                    <UButton
+                      label="Choose color"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      <template #leading>
+                        <span
+                          :style="{
+                            backgroundColor: config.eventColor || '#06b6d4',
+                          }"
+                          class="size-3 rounded-full"
+                        />
+                      </template>
+                    </UButton>
+                    <template #content>
+                      <UColorPicker v-model="config.eventColor" class="p-2" />
+                    </template>
+                  </UPopover>
+                  <UCheckbox
+                    v-model="config.useUserColors"
+                    label="Use User Profile Colors"
+                  />
+                </div>
+              </div>
+            </template>
           </div>
-
-          <template v-if="config.enabled">
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-highlighted">Assigned Users</label>
-              <USelect
-                v-model="config.user"
-                :items="users.map((u) => ({ label: u.name, value: u.id }))"
-                placeholder="Optional: Select user(s)"
-                class="w-full"
-                multiple
-              />
-            </div>
-
-            <div class="space-y-2">
-              <label class="block text-sm font-medium text-highlighted">Event Color</label>
-              <UPopover>
-                <UButton
-                  label="Choose color"
-                  color="neutral"
-                  variant="outline"
-                >
-                  <template #leading>
-                    <span
-                      :style="{
-                        backgroundColor: config.eventColor || '#06b6d4',
-                      }"
-                      class="size-3 rounded-full"
-                    />
-                  </template>
-                </UButton>
-                <template #content>
-                  <UColorPicker v-model="config.eventColor" class="p-2" />
-                </template>
-              </UPopover>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <UCheckbox
-                v-model="config.useUserColors"
-                label="Use User Profile Colors"
-              />
-            </div>
-          </template>
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-end gap-2 border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           color="neutral"
           variant="ghost"

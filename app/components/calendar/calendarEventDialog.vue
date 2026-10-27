@@ -46,16 +46,9 @@ const emit = defineEmits<{
 
 const { users, fetchUsers } = useUsers();
 
-const { isPortrait, isShortScreen, isWideScreen, isPhoneDevice } = useAppLayout();
-const isTwoColumn = computed(() => !isPortrait.value && isWideScreen.value);
+const { isShortScreen, isWideLandscape, dialogPanelClass, dialogBarClass } = useAppLayout();
 
-const panelClass = computed(() => {
-  if (isPhoneDevice.value)
-    return "w-full h-dvh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]";
-  if (isTwoColumn.value)
-    return "w-[min(56rem,calc(100vw-2rem))] max-h-[90dvh] rounded-lg border border-default shadow-lg";
-  return "w-[min(425px,calc(100vw-1rem))] max-h-[90dvh] rounded-lg border border-default shadow-lg";
-});
+const panelClass = computed(() => dialogPanelClass("w-[min(425px,calc(100vw-1rem))]"));
 
 const {
   getEventStartTimeForInput,
@@ -1579,7 +1572,7 @@ function handleDelete() {
     >
       <div
         class="shrink-0 flex items-center justify-between border-b border-default"
-        :class="isShortScreen ? 'px-4 py-2' : 'p-4'"
+        :class="dialogBarClass"
       >
         <h2 class="text-base font-semibold leading-6">
           {{ event?.id ? "Edit Event" : "Create Event" }}
@@ -1596,14 +1589,14 @@ function handleDelete() {
       <div class="flex-1 min-h-0 overflow-y-auto p-4">
         <div
           :class="
-            isTwoColumn
+            isWideLandscape
               ? 'grid grid-cols-2 grid-rows-[auto_1fr] gap-6 items-start'
               : 'space-y-6'
           "
         >
           <div
             class="space-y-6"
-            :class="{ 'col-start-1 row-start-1': isTwoColumn }"
+            :class="{ 'col-start-1 row-start-1': isWideLandscape }"
           >
             <div
               v-if="error"
@@ -1827,7 +1820,7 @@ function handleDelete() {
           </div>
           <div
             class="space-y-6"
-            :class="{ 'col-start-2 row-start-1 row-span-2': isTwoColumn }"
+            :class="{ 'col-start-2 row-start-1 row-span-2': isWideLandscape }"
           >
             <div class="flex gap-4">
               <div class="w-1/2 space-y-2">
@@ -1976,7 +1969,7 @@ function handleDelete() {
           </div>
           <div
             class="space-y-6"
-            :class="{ 'col-start-1 row-start-2': isTwoColumn }"
+            :class="{ 'col-start-1 row-start-2': isWideLandscape }"
           >
             <div class="space-y-2">
               <label class="block text-sm font-medium text-highlighted">Location</label>
@@ -2060,7 +2053,7 @@ function handleDelete() {
       </div>
       <div
         class="shrink-0 flex justify-between border-t border-default"
-        :class="isShortScreen ? 'px-4 py-2' : 'p-4'"
+        :class="dialogBarClass"
       >
         <UButton
           v-if="event?.id && canDelete && !isReadOnly"
