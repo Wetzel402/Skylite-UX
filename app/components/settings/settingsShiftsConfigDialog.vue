@@ -759,20 +759,20 @@ async function deleteConfiguredShift(assignmentId: string) {
                   class="space-y-3"
                 >
                   <label class="block text-sm font-medium text-highlighted">Shifts</label>
-                  <div class="space-y-2">
+                  <div class="@container space-y-2">
                     <div
                       v-for="(seg, idx) in editableSegments"
                       :key="idx"
-                      class="flex flex-wrap items-center gap-2"
+                      class="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] @sm:grid-cols-[72px_auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2"
                     >
-                      <span class="text-sm font-medium text-highlighted min-w-[72px]">{{ seg.label }}</span>
+                      <span class="col-span-3 @sm:col-span-1 text-sm font-medium text-highlighted">{{ seg.label }}</span>
                       <UInput
                         :model-value="seg.count"
                         type="number"
                         min="1"
                         max="99"
                         step="1"
-                        class="w-16"
+                        class="w-16 col-start-1 @sm:col-start-2"
                         @update:model-value="(v: number | string) => updateSegmentCount(idx, v)"
                       />
                       <span v-if="seg.preset !== 'no-shift'" class="text-muted">×</span>
@@ -782,7 +782,7 @@ async function deleteConfiguredShift(assignmentId: string) {
                         :items="slotPresetSelectItems"
                         option-attribute="label"
                         value-attribute="value"
-                        class="min-w-[140px]"
+                        class="w-full"
                         @update:model-value="(v: string) => updateSegmentPreset(idx, v)"
                       />
                       <UPopover v-if="seg.preset !== 'no-shift'">
@@ -809,70 +809,75 @@ async function deleteConfiguredShift(assignmentId: string) {
                           />
                         </template>
                       </UPopover>
-                      <div
-                        v-if="seg.preset === 'custom'"
-                        class="flex items-center gap-1 text-xs text-muted"
-                      >
-                        <span>Start:</span>
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.startHour ?? 9"
-                          :items="hourOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startHour', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.startMinute ?? 0"
-                          :items="minuteOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startMinute', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.startAmPm ?? 'AM'"
-                          :items="amPmOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'startAmPm', v)"
-                        />
-                        <span>End:</span>
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.endHour ?? 5"
-                          :items="hourOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endHour', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.endMinute ?? 0"
-                          :items="minuteOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endMinute', v)"
-                        />
-                        <USelect
-                          :model-value="customSegmentTimes[idx]?.endAmPm ?? 'PM'"
-                          :items="amPmOptions"
-                          option-attribute="label"
-                          value-attribute="value"
-                          class="w-16"
-                          @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'endAmPm', v)"
-                        />
-                      </div>
                       <UButton
                         v-if="selectedTemplateId === 'custom' && editableSegments.length > 1"
                         color="neutral"
                         variant="ghost"
                         size="xs"
                         icon="i-lucide-trash"
+                        class="col-start-4 row-start-1 justify-self-end @sm:col-start-6"
                         :aria-label="`Remove ${seg.label}`"
                         @click="removeSegment(idx)"
                       />
+                      <div
+                        v-if="seg.preset === 'custom'"
+                        class="col-span-4 @sm:col-span-6 flex flex-col gap-1 text-xs text-muted"
+                      >
+                        <div class="flex items-center gap-1">
+                          <span class="w-9 shrink-0">Start:</span>
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.startHour ?? 9"
+                            :items="hourOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startHour', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.startMinute ?? 0"
+                            :items="minuteOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'startMinute', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.startAmPm ?? 'AM'"
+                            :items="amPmOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-20"
+                            @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'startAmPm', v)"
+                          />
+                        </div>
+                        <div class="flex items-center gap-1">
+                          <span class="w-9 shrink-0">End:</span>
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.endHour ?? 5"
+                            :items="hourOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endHour', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.endMinute ?? 0"
+                            :items="minuteOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-16"
+                            @update:model-value="(v: number) => updateCustomSegmentTime(idx, 'endMinute', v)"
+                          />
+                          <USelect
+                            :model-value="customSegmentTimes[idx]?.endAmPm ?? 'PM'"
+                            :items="amPmOptions"
+                            option-attribute="label"
+                            value-attribute="value"
+                            class="w-20"
+                            @update:model-value="(v: string) => updateCustomSegmentTime(idx, 'endAmPm', v)"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <p class="text-sm text-muted">
