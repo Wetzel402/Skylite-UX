@@ -72,7 +72,8 @@ function createAppLayout() {
   const isMounted = useMounted();
   const portraitQuery = useMediaQuery("(orientation: portrait)");
   const phoneQuery = useMediaQuery("(max-width: 639px)");
-  const shortQuery = useMediaQuery("(max-height: 499px)");
+  const shortQuery = useMediaQuery("(max-height: 767px)");
+  const phoneHeightQuery = useMediaQuery("(max-height: 499px)");
   const coarseQuery = useMediaQuery("(pointer: coarse)");
   const largeTabletQuery = useMediaQuery("(min-width: 700px) and (min-height: 700px)");
   const wideQuery = useMediaQuery("(min-width: 900px)");
@@ -83,7 +84,7 @@ function createAppLayout() {
   const isShortScreen = computed(() => isMounted.value && shortQuery.value);
   const isWideScreen = computed(() => isMounted.value && wideQuery.value);
   const isPhoneDevice = computed(
-    () => isMounted.value && coarseQuery.value && (phoneQuery.value || shortQuery.value),
+    () => isMounted.value && coarseQuery.value && (phoneQuery.value || phoneHeightQuery.value),
   );
   const isLargeScreen = computed(
     () => isMounted.value && (!coarseQuery.value || largeTabletQuery.value),
@@ -98,6 +99,9 @@ function createAppLayout() {
   );
   const isWideLandscape = computed(() => !isPortrait.value && isWideScreen.value);
   const dialogBarClass = computed(() => isShortScreen.value ? "px-4 py-2" : "p-4");
+  const pageHeaderClass = computed(() =>
+    isShortScreen.value ? "px-2 py-2 sm:px-4" : "px-2 py-3 sm:px-4 sm:py-5",
+  );
 
   function dialogPanelClass(widthClass: string) {
     if (isPhoneDevice.value)
@@ -115,8 +119,6 @@ function createAppLayout() {
     isPortrait,
     isPhone,
     isShortScreen,
-    isWideScreen,
-    isPhoneDevice,
     isLargeScreen,
     isWideLandscape,
     navigation,
@@ -124,6 +126,7 @@ function createAppLayout() {
     isDockHidden,
     dialogPanelClass,
     dialogBarClass,
+    pageHeaderClass,
   };
 }
 

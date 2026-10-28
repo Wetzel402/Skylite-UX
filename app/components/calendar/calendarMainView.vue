@@ -16,6 +16,7 @@ import GlobalDateHeader from "~/components/global/globalDateHeader.vue";
 import GlobalFloatingActionButton from "~/components/global/globalFloatingActionButton.vue";
 import { useCalendar } from "~/composables/useCalendar";
 import { useCalendarIntegrations } from "~/composables/useCalendarIntegrations";
+import { useAppLayout } from "~/composables/useClientPreferences";
 import { useStableDate } from "~/composables/useStableDate";
 import { DEFAULT_LOCAL_EVENT_COLOR } from "~/types/global";
 
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 const { getStableDate, stableDate } = useStableDate();
 const { getEventsForDateRange, scrollToDate } = useCalendar();
 const { calendarIntegrations } = useCalendarIntegrations();
+const { pageHeaderClass } = useAppLayout();
 const currentDate = useState<Date>("calendar-current-date", () =>
   getStableDate());
 const view = ref<CalendarView>(props.initialView || "week");
@@ -258,7 +260,8 @@ function getDaysForAgenda(date: Date) {
     class="flex h-[calc(100dvh_-_2rem_-_var(--app-nav-offset))] w-full flex-col rounded-lg"
   >
     <div
-      class="px-2 py-3 sm:px-4 sm:py-5 sticky top-0 z-40 bg-default border-b border-default"
+      class="sticky top-0 z-40 bg-default border-b border-default"
+      :class="pageHeaderClass"
     >
       <GlobalDateHeader
         :show-navigation="true"

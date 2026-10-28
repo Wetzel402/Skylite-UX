@@ -31,6 +31,9 @@ const emit = defineEmits<{
   (e: "delete", todoId: string, stopRecurrence?: boolean): void;
 }>();
 
+const { isWideLandscape, dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(425px,calc(100vw-1rem))]"));
+
 const { parseStableDate } = useStableDate();
 const {
   parseRecurrenceFromICal,
@@ -335,11 +338,13 @@ function confirmDeleteAndStop() {
     @click.self="emit('close')"
   >
     <div
-      class="w-[425px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       @click.stop
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
       >
         <h3 class="text-base font-semibold leading-6">
           {{ todo?.id ? "Edit Todo" : "Add Todo" }}
@@ -353,97 +358,107 @@ function confirmDeleteAndStop() {
         />
       </div>
 
-      <div class="p-4 space-y-6">
+      <div
+        class="flex-1 min-h-0 overflow-y-auto p-4"
+        :class="isWideLandscape ? 'grid grid-cols-2 gap-6 items-start' : 'space-y-6'"
+      >
         <div
           v-if="todoError"
           class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           {{ todoError }}
         </div>
 
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Title</label>
-          <UInput
-            v-model="todoTitle"
-            placeholder="Todo title"
-            class="w-full"
-            :ui="{ base: 'w-full' }"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <label class="block text-sm font-medium text-highlighted">Description</label>
-          <UTextarea
-            v-model="todoDescription"
-            placeholder="Todo description (optional)"
-            :rows="3"
-            class="w-full"
-            :ui="{ base: 'w-full' }"
-          />
-        </div>
-
-        <div class="flex gap-4">
-          <div class="w-1/2 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">Priority</label>
-            <USelect
-              v-model="todoPriority"
-              :items="priorityOptions"
-              option-attribute="label"
-              value-attribute="value"
+        <div class="min-w-0 space-y-6">
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-highlighted">Title</label>
+            <UInput
+              v-model="todoTitle"
+              placeholder="Todo title"
               class="w-full"
               :ui="{ base: 'w-full' }"
             />
           </div>
 
-          <div class="w-1/2 space-y-2">
-            <label class="block text-sm font-medium text-highlighted">Due Date</label>
-            <UPopover>
-              <UButton
-                color="neutral"
-                variant="subtle"
-                icon="i-lucide-calendar"
-                class="w-full justify-between"
-              >
-                <NuxtTime
-                  v-if="todoDueDate"
-                  :datetime="todoDueDate.toDate(getLocalTimeZone())"
-                  year="numeric"
-                  month="short"
-                  day="numeric"
-                />
-                <span v-else>No due date</span>
-              </UButton>
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-highlighted">Description</label>
+            <UTextarea
+              v-model="todoDescription"
+              placeholder="Todo description (optional)"
+              :rows="3"
+              class="w-full"
+              :ui="{ base: 'w-full' }"
+            />
+          </div>
 
-              <template #content>
-                <div class="p-2 space-y-2">
-                  <UButton
+          <div class="flex gap-4">
+            <div class="w-1/2 space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Priority</label>
+              <USelect
+                v-model="todoPriority"
+                :items="priorityOptions"
+                option-attribute="label"
+                value-attribute="value"
+                class="w-full"
+                :ui="{ base: 'w-full' }"
+              />
+            </div>
+
+            <div class="w-1/2 space-y-2">
+              <label class="block text-sm font-medium text-highlighted">Due Date</label>
+              <UPopover>
+                <UButton
+                  color="neutral"
+                  variant="subtle"
+                  icon="i-lucide-calendar"
+                  class="w-full justify-between"
+                >
+                  <NuxtTime
                     v-if="todoDueDate"
-                    color="neutral"
-                    variant="ghost"
-                    class="w-full justify-start"
-                    @click="todoDueDate = null"
-                  >
-                    <template #leading>
-                      <UIcon name="i-lucide-x" />
-                    </template>
-                    Clear due date
-                  </UButton>
-                  <GlobalDatePicker
-                    :model-value="todoDueDateForPicker"
-                    @update:model-value="todoDueDate = $event"
+                    :datetime="todoDueDate.toDate(getLocalTimeZone())"
+                    year="numeric"
+                    month="short"
+                    day="numeric"
                   />
-                </div>
-              </template>
-            </UPopover>
+                  <span v-else>No due date</span>
+                </UButton>
+
+                <template #content>
+                  <div class="p-2 space-y-2">
+                    <UButton
+                      v-if="todoDueDate"
+                      color="neutral"
+                      variant="ghost"
+                      class="w-full justify-start"
+                      @click="todoDueDate = null"
+                    >
+                      <template #leading>
+                        <UIcon name="i-lucide-x" />
+                      </template>
+                      Clear due date
+                    </UButton>
+                    <GlobalDatePicker
+                      :model-value="todoDueDateForPicker"
+                      @update:model-value="todoDueDate = $event"
+                    />
+                  </div>
+                </template>
+              </UPopover>
+            </div>
           </div>
         </div>
 
         <GlobalRecurrenceForm
+          class="min-w-0"
           :state="recurrenceState"
         />
       </div>
 
-      <div class="flex justify-between p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-between border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           v-if="todo?.id"
           color="error"
@@ -475,7 +490,7 @@ function confirmDeleteAndStop() {
       @click="showDeleteConfirm = false"
     >
       <div
-        class="w-[400px] bg-default rounded-lg border border-default shadow-lg"
+        class="w-[min(400px,calc(100vw-2rem))] bg-default rounded-lg border border-default shadow-lg"
         @click.stop
       >
         <div class="p-4 border-b border-default">

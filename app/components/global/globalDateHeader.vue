@@ -32,6 +32,8 @@ const emit = defineEmits<{
 }>();
 
 const { getStableDate } = useStableDate();
+const { isShortScreen, isPhone } = useAppLayout();
+const compact = computed(() => isShortScreen.value || isPhone.value);
 
 const currentDate = computed(() => props.currentDate || getStableDate());
 const view = computed(() => props.view || "week");
@@ -128,6 +130,10 @@ const todoDueRangeLabel = computed(() =>
   TODO_DUE_RANGE_OPTIONS.find(o => o.value === (props.todoDueRange ?? "all"))?.label ?? "All",
 );
 
+const isTodoDueFiltered = computed(() => (props.todoDueRange ?? "all") !== "all");
+
+const controlSize = computed(() => compact.value ? "md" : "xl");
+
 function handlePrevious() {
   emit("previous");
 }
@@ -143,12 +149,27 @@ function handleToday() {
 
 <template>
   <div
-    class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-    :class="className"
+    :class="[
+      className,
+      isPhone
+        ? 'grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1'
+        : 'flex flex-col sm:flex-row sm:items-center justify-between gap-2',
+    ]"
   >
-    <div class="flex sm:flex-col max-sm:items-center justify-between gap-1.5">
+    <div
+      class="flex"
+      :class="[
+        compact
+          ? 'flex-row items-baseline gap-2'
+          : 'sm:flex-col max-sm:items-center justify-between gap-1.5',
+        { 'col-start-1 row-start-1': isPhone },
+      ]"
+    >
       <div class="flex items-center gap-1.5">
-        <h1 class="font-semibold text-xl text-highlighted">
+        <h1
+          class="font-semibold text-highlighted whitespace-nowrap"
+          :class="compact ? 'text-lg' : 'text-xl'"
+        >
           <NuxtTime
             :datetime="now"
             hour="numeric"
@@ -157,18 +178,25 @@ function handleToday() {
           />
         </h1>
       </div>
-      <div class="text-sm text-muted">
+      <div class="text-sm text-muted whitespace-nowrap">
         <NuxtTime
           :datetime="now"
-          weekday="long"
-          month="long"
+          :weekday="compact ? 'short' : 'long'"
+          :month="compact ? 'short' : 'long'"
           day="numeric"
         />
       </div>
     </div>
 
-    <div v-if="showNavigation" class="flex items-center justify-center flex-1">
-      <h2 class="font-semibold text-lg text-highlighted">
+    <div
+      v-if="showNavigation"
+      class="flex items-center"
+      :class="isPhone ? 'col-start-1 row-start-2 justify-start' : 'flex-1 justify-center'"
+    >
+      <h2
+        class="font-semibold text-highlighted whitespace-nowrap"
+        :class="compact ? 'text-base' : 'text-lg'"
+      >
         <NuxtTime
           v-if="viewTitle === 'month'"
           :datetime="currentDate"
@@ -225,18 +253,19 @@ function handleToday() {
 
     <div
       v-if="showNavigation || showTodoSortSelector || showTodoFilterSelector"
-      class="flex items-center justify-between gap-2"
+      :class="isPhone ? 'contents' : 'flex items-center justify-between gap-2'"
     >
       <div
         v-if="showNavigation"
         class="flex items-center justify-between gap-2"
+        :class="{ 'col-start-2 row-start-1 justify-self-end': isPhone }"
       >
-        <div class="flex items-center sm:gap-2 max-sm:order-1">
+        <div class="flex items-center sm:gap-2">
           <UButton
             icon="i-lucide-chevron-left"
             color="neutral"
             variant="ghost"
-            size="xl"
+            :size="controlSize"
             aria-label="Previous"
             @click="handlePrevious"
           />
@@ -244,14 +273,14 @@ function handleToday() {
             icon="i-lucide-chevron-right"
             color="neutral"
             variant="ghost"
-            size="xl"
+            :size="controlSize"
             aria-label="Next"
             @click="handleNext"
           />
         </div>
         <UButton
           color="primary"
-          size="xl"
+          :size="controlSize"
           @click="handleToday"
         >
           Today
@@ -260,12 +289,13 @@ function handleToday() {
       <div
         v-if="showViewSelector"
         class="flex items-center justify-between gap-2"
+        :class="{ 'col-start-2 row-start-2 justify-self-end': isPhone }"
       >
         <UDropdownMenu :items="items">
           <UButton
             color="neutral"
             variant="outline"
-            size="xl"
+            :size="controlSize"
             trailing-icon="i-lucide-chevron-down"
           >
             <span class="capitalize">{{ view }}</span>
@@ -275,36 +305,49 @@ function handleToday() {
       <div
         v-if="showTodoSortSelector"
         class="flex items-center justify-between gap-2"
+        :class="{ 'col-start-1 row-start-2 justify-self-start': isPhone }"
       >
         <UDropdownMenu :items="todoSortItems">
           <UButton
             color="neutral"
             variant="outline"
-            size="xl"
+            :size="controlSize"
             icon="i-lucide-arrow-down-wide-narrow"
             trailing-icon="i-lucide-chevron-down"
             :aria-label="`Sort todos by ${todoSortLabel}`"
           >
-            Sort: {{ todoSortLabel }}
+            <span class="whitespace-nowrap">Sort: {{ todoSortLabel }}</span>
           </UButton>
         </UDropdownMenu>
       </div>
       <div
         v-if="showTodoFilterSelector"
         class="flex items-center justify-between gap-2"
+        :class="{ 'col-start-2 row-start-2 justify-self-end': isPhone }"
       >
-        <UDropdownMenu :items="todoDueRangeItems">
+        <UFieldGroup>
+          <UDropdownMenu :items="todoDueRangeItems">
+            <UButton
+              :color="isTodoDueFiltered ? 'primary' : 'neutral'"
+              :variant="isTodoDueFiltered ? 'soft' : 'outline'"
+              :size="controlSize"
+              icon="i-lucide-filter"
+              trailing-icon="i-lucide-chevron-down"
+              :aria-label="`Filter todos by due date: ${todoDueRangeLabel}`"
+            >
+              <span class="whitespace-nowrap">Due: {{ todoDueRangeLabel }}</span>
+            </UButton>
+          </UDropdownMenu>
           <UButton
-            color="neutral"
-            variant="outline"
-            size="xl"
-            icon="i-lucide-filter"
-            trailing-icon="i-lucide-chevron-down"
-            :aria-label="`Filter todos by due date: ${todoDueRangeLabel}`"
-          >
-            Due: {{ todoDueRangeLabel }}
-          </UButton>
-        </UDropdownMenu>
+            v-if="isTodoDueFiltered"
+            color="primary"
+            variant="soft"
+            :size="controlSize"
+            icon="i-lucide-x"
+            aria-label="Clear due date filter"
+            @click="emit('todoDueRangeChange', 'all')"
+          />
+        </UFieldGroup>
       </div>
     </div>
   </div>

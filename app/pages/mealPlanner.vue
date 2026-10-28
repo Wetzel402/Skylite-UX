@@ -1,7 +1,12 @@
+<script setup lang="ts">
+const { pageHeaderClass } = useAppLayout();
+</script>
+
 <template>
   <div class="flex w-full flex-col rounded-lg">
     <div
-      class="py-5 sm:px-4 sticky top-0 z-40 bg-default border-b border-default"
+      class="sticky top-0 z-40 bg-default border-b border-default"
+      :class="pageHeaderClass"
     >
       <GlobalDateHeader />
     </div>
