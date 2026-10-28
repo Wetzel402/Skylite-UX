@@ -49,7 +49,6 @@ npm run dev
 ```
 Skylite-UX/
 ├── .devcontainer/              # Dev container configuration
-│   └── integrations/           # Compose files to deploy integration containers
 ├── app/                        # Main application code
 │   ├── assets/                 # Static assets (CSS, images, etc.)
 │   ├── components/             # Vue components
@@ -440,6 +439,8 @@ npm run preview
 ### Docker Build
 
 Release builds utilize the [CalVer](https://calver.org) YYYY.MM.Micro standard.
+
+The dev container includes the [Docker Outside of Docker](https://github.com/devcontainers/features/pkgs/container/features%2Fdocker-outside-of-docker) feature, so the `docker` commands below can be run from the dev container terminal.
 
 **Note:** This project uses [Docker Hardened Images](https://www.docker.com/products/hardened-images/) for our base image, which requires Docker Hub authentication. You must log into Docker Hub before building to ensure you use the same base image as production builds.
 

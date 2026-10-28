@@ -10,16 +10,15 @@ permalink: /contributing/integrations/
 
 Skylite UX is designed to integrate with various external and self-hosted services. This section covers how to set up and configure integrations for development.
 
-We use the [Docker Outside of Docker](https://github.com/devcontainers/features/pkgs/container/features%2Fdocker-outside-of-docker) dev container feature for easier development.
+To develop or test an integration, deploy the service yourself by following its official documentation, for example the [Mealie installation](https://docs.mealie.io/documentation/getting-started/installation/installation-checklist/) or [Tandoor Docker installation](https://docs.tandoor.dev/install/docker/) guides. When you add the integration in Settings, its Base URL must be reachable from the dev container.
 
 ## Integration Development
 
 ### For Self-Hosted Integrations:
 
-1. **Create a new folder** in `Skylite-UX/.devcontainer/integrations/`
-2. **Create a Docker Compose file** for the new service you are integrating (see [Docker Compose for Integrations](#docker-compose-for-integrations))
-3. **Spin up the Docker container**
-4. **Generate an API key** for the service (if applicable)
+1. **Deploy the service** by following its official installation docs
+2. **Confirm its Base URL is reachable** from the dev container
+3. **Generate an API key** for the service (if applicable)
 
 ### For External Integrations:
 
@@ -43,45 +42,6 @@ We use the [Docker Outside of Docker](https://github.com/devcontainers/features/
 10. **Test and commit** as defined in the [Development Workflow]({{ '/contributing/code/' | relative_url }}#development-workflow)
 
 ## Integration Configuration
-
-### Docker Compose for Integrations
-
-```yaml
-# .devcontainer/integrations/service/service-docker-compose.yml
-services:
-  # Notes about the integration
-  # How to create API key, base URL, etc.
-  # Base URL: e.g. http://mealie:9000
-  mealie:
-    image: ghcr.io/mealie-recipes/mealie:latest
-    container_name: mealie
-    restart: always
-    ports:
-      - "9925:9000" # External port mapping
-    deploy:
-      resources:
-        limits:
-          memory: 1000M # Memory limit
-    volumes:
-      - mealie-data:/app/data/
-    environment:
-      # Set Backend ENV Variables Here
-      ALLOW_SIGNUP: false
-      PUID: 1000
-      PGID: 1000
-      TZ: America/Anchorage
-    # Make sure the service runs on the same network as the dev container
-    networks:
-      skylite-ux_devcontainer_default:
-
-volumes:
-  mealie-data:
-
-# Make sure the service runs on the same network as the dev container
-networks:
-  skylite-ux_devcontainer_default:
-    external: true
-```
 
 ### Defining Your Integration in integrationConfig.ts
 
@@ -167,7 +127,7 @@ const fieldFilters = {
 #### Authentication Errors
 
 ```bash
-# Ensure service is on the same Docker network as dev container
+# Ensure the service's Base URL is reachable from the dev container
 # Ensure correct base URL
 # Check token expiration
 ```
