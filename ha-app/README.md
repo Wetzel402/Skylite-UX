@@ -50,7 +50,7 @@ Check out the [contributor guide](https://wetzel402.github.io/Skylite-UX/contrib
 
 ## License
 
-Distributed under the GNU Affero General Public License v3.0. See [`LICENSE.md`](LICENSE.md) for more information.
+Distributed under the GNU Affero General Public License v3.0 only (AGPL-3.0-only). See [`LICENSE.md`](https://github.com/Wetzel402/Skylite-UX/blob/main/LICENSE.md) for more information.
 
 ## Special Thanks
 
