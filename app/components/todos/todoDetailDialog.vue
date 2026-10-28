@@ -13,6 +13,9 @@ const emit = defineEmits<{
   (e: "edit", todo: TodoListItem): void;
 }>();
 
+const { dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(425px,calc(100vw-1rem))]"));
+
 const titleId = useId();
 const panelRef = ref<HTMLElement | null>(null);
 let lastFocusedElement: HTMLElement | null = null;
@@ -77,7 +80,8 @@ function handleTabKey(event: KeyboardEvent) {
   >
     <div
       ref="panelRef"
-      class="w-[425px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
@@ -86,7 +90,8 @@ function handleTabKey(event: KeyboardEvent) {
       @keydown.tab="handleTabKey"
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
       >
         <h3
           :id="titleId"
@@ -105,7 +110,7 @@ function handleTabKey(event: KeyboardEvent) {
         />
       </div>
 
-      <div class="p-4 space-y-6">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         <div class="flex items-center gap-2">
           <span
             class="text-xs px-2 py-0.5 rounded-full"
@@ -142,7 +147,10 @@ function handleTabKey(event: KeyboardEvent) {
         </div>
       </div>
 
-      <div class="flex justify-between p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-between border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           color="neutral"
           variant="ghost"

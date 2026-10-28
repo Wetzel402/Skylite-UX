@@ -52,7 +52,7 @@ const {
 } = useSyncManager();
 
 const { preferences, updatePreferences } = useClientPreferences();
-const { isWideLandscape } = useAppLayout();
+const { isWideLandscape, pageHeaderClass } = useAppLayout();
 
 const isClient = ref(false);
 onMounted(() => {
@@ -702,7 +702,8 @@ function integrationNeedsReauth(integration?: Integration | null): boolean {
 <template>
   <div class="flex w-full flex-col rounded-lg">
     <div
-      class="px-2 py-3 sm:px-4 sm:py-5 sticky top-0 z-40 bg-default border-b border-default"
+      class="sticky top-0 z-40 bg-default border-b border-default"
+      :class="pageHeaderClass"
     >
       <GlobalDateHeader />
     </div>

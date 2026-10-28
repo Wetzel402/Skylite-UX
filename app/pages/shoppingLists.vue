@@ -82,6 +82,7 @@ const editingList = ref<ShoppingList | null>(null);
 const editingItem = ref<ShoppingListItem | null>(null);
 
 const { showError, showWarning } = useAlertToast();
+const { pageHeaderClass } = useAppLayout();
 
 function normalizeIntegrationItem(item: RawIntegrationItem): ShoppingListItem {
   return {
@@ -1272,14 +1273,15 @@ function getFilteredFieldsForItem(
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-2rem)] w-full flex-col rounded-lg">
+  <div class="flex h-[calc(100dvh_-_2rem_-_var(--app-nav-offset))] w-full flex-col rounded-lg">
     <div
-      class="py-5 sm:px-4 sticky top-0 z-40 bg-default border-b border-default"
+      class="sticky top-0 z-40 bg-default border-b border-default"
+      :class="pageHeaderClass"
     >
       <GlobalDateHeader />
     </div>
 
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex flex-1 flex-col min-h-0">
       <GlobalList
         :lists="transformedShoppingLists"
         :loading="isLoading"

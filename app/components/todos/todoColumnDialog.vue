@@ -12,6 +12,9 @@ const emit = defineEmits<{
   (e: "delete", columnId: string): void;
 }>();
 
+const { dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(425px,calc(100vw-1rem))]"));
+
 const columnName = ref("");
 const columnError = ref<string | null>(null);
 
@@ -63,11 +66,13 @@ function handleDelete() {
     @click="emit('close')"
   >
     <div
-      class="w-[425px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       @click.stop
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
       >
         <h3 class="text-base font-semibold leading-6">
           {{ column?.id ? "Edit Column" : "Create Column" }}
@@ -82,7 +87,7 @@ function handleDelete() {
         />
       </div>
 
-      <div class="p-4 space-y-6">
+      <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-6">
         <div
           v-if="columnError"
           class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
@@ -102,7 +107,10 @@ function handleDelete() {
         </div>
       </div>
 
-      <div class="flex justify-between p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-between border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           v-if="column?.id"
           color="error"

@@ -19,6 +19,9 @@ const emit = defineEmits<{
   (e: "delete", itemId: string): void;
 }>();
 
+const { isWideLandscape, dialogPanelClass, dialogBarClass } = useAppLayout();
+const panelClass = computed(() => dialogPanelClass("w-[min(425px,calc(100vw-1rem))]"));
+
 const formData = ref<FormData>({});
 
 function initializeFormData() {
@@ -125,11 +128,13 @@ function handleDelete() {
     @click="emit('close')"
   >
     <div
-      class="w-[425px] max-h-[90vh] overflow-y-auto bg-default rounded-lg border border-default shadow-lg"
+      class="flex flex-col overflow-hidden bg-default"
+      :class="panelClass"
       @click.stop
     >
       <div
-        class="flex items-center justify-between p-4 border-b border-default"
+        class="shrink-0 flex items-center justify-between border-b border-default"
+        :class="dialogBarClass"
       >
         <h3 class="text-base font-semibold leading-6">
           {{ item ? "Edit Item" : "Add Item" }}
@@ -144,16 +149,20 @@ function handleDelete() {
         />
       </div>
 
-      <div class="p-4 space-y-6">
+      <div
+        class="flex-1 min-h-0 overflow-y-auto p-4"
+        :class="isWideLandscape ? 'grid grid-cols-2 gap-6 items-start' : 'space-y-6'"
+      >
         <div
           v-if="error"
           class="bg-error/10 text-error rounded-md px-3 py-2 text-sm"
+          :class="{ 'col-span-2': isWideLandscape }"
         >
           {{ error }}
         </div>
 
         <template v-for="field in fields" :key="field.key">
-          <div v-if="field.key === 'quantity'" class="flex gap-4">
+          <div v-if="field.key === 'quantity'" class="min-w-0 flex gap-4">
             <div class="w-1/2 space-y-2">
               <label
                 class="block text-sm font-medium text-highlighted flex items-center gap-1"
@@ -206,7 +215,7 @@ function handleDelete() {
             </div>
           </div>
 
-          <div v-else-if="field.key !== 'unit'" class="space-y-2">
+          <div v-else-if="field.key !== 'unit'" class="min-w-0 space-y-2">
             <label
               class="block text-sm font-medium text-highlighted flex items-center gap-1"
             >
@@ -250,7 +259,10 @@ function handleDelete() {
         </template>
       </div>
 
-      <div class="flex justify-between p-4 border-t border-default">
+      <div
+        class="shrink-0 flex justify-between border-t border-default"
+        :class="dialogBarClass"
+      >
         <UButton
           v-if="item?.id && canDelete"
           color="error"

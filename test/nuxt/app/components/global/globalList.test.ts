@@ -1,10 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { mountSuspended } from "@nuxt/test-utils/runtime";
+import { afterEach, describe, it, expect, vi } from "vitest";
+import { mockNuxtImport, mountSuspended } from "@nuxt/test-utils/runtime";
+import { ref } from "vue";
 
 import type { ShoppingListWithIntegration } from "~/types/ui";
 import type { ShoppingListItem } from "~/types/database";
 
 import GlobalList from "../../../../../app/components/global/globalList.vue";
+
+const layout = vi.hoisted(() => ({ portrait: false, phone: false, short: false }));
+
+mockNuxtImport("useAppLayout", () => () => ({
+  isPortrait: ref(layout.portrait),
+  isPhone: ref(layout.phone),
+  isShortScreen: ref(layout.short),
+}));
 
 function baseShoppingList(
   overrides: Partial<ShoppingListWithIntegration> & { id: string; name: string; order: number },
@@ -296,5 +305,95 @@ describe("GlobalList", () => {
     });
     expect(wrapper.text()).toContain("No items yet");
     expect(wrapper.text()).toContain("Add your first item to get started");
+  });
+
+  describe("orientation layout", () => {
+    const lists = [
+      baseShoppingList({ id: "list-1", name: "Groceries", order: 1 }),
+      baseShoppingList({ id: "list-2", name: "Hardware", order: 2 }),
+    ];
+
+    afterEach(() => {
+      layout.portrait = false;
+      layout.phone = false;
+    });
+
+    it("renders a wrapping grid in portrait", async () => {
+      layout.portrait = true;
+      const wrapper = await mountSuspended(GlobalList, {
+        props: { lists, loading: false },
+      });
+      const html = wrapper.html();
+      expect(html).toContain("grid-cols-[repeat(auto-fill,minmax(min(20rem,100%),1fr))]");
+      expect(html).toContain("auto-rows-[minmax(24rem,1fr)]");
+      expect(html).not.toContain("min-w-80");
+      expect(html).not.toContain("sticky top-0");
+    });
+
+    it("uses a single page scroll with sticky list headers on a portrait phone", async () => {
+      layout.portrait = true;
+      layout.phone = true;
+      const wrapper = await mountSuspended(GlobalList, {
+        props: { lists, loading: false },
+      });
+      const html = wrapper.html();
+      expect(html).not.toContain("auto-rows-[minmax(24rem,1fr)]");
+      expect(html.match(/sticky top-0 z-10/g)).toHaveLength(2);
+      expect(html).not.toContain("overflow-y-auto p-4");
+    });
+
+    it("renders stretching columns in landscape", async () => {
+      const wrapper = await mountSuspended(GlobalList, {
+        props: { lists, loading: false },
+      });
+      const html = wrapper.html();
+      expect(html).toContain("overflow-x-auto flex gap-6");
+      expect(html.match(/flex-1 basis-0 min-w-80/g)).toHaveLength(2);
+      expect(html).not.toContain("auto-fill");
+    });
+  });
+
+  describe("compact short screens", () => {
+    const lists = [baseShoppingList({ id: "list-1", name: "Groceries", order: 1 })];
+
+    afterEach(() => {
+      layout.short = false;
+    });
+
+    it("renders an add icon button in the list header", async () => {
+      layout.short = true;
+      const wrapper = await mountSuspended(GlobalList, {
+        props: { lists, loading: false, showAdd: true },
+      });
+      expect(wrapper.find("[aria-label=\"Add item to Groceries\"]").exists()).toBe(true);
+      expect(wrapper.text()).not.toContain("Add Item");
+    });
+
+    it("shows a filter hint when the list has hidden items", async () => {
+      layout.short = true;
+      const wrapper = await mountSuspended(GlobalList, {
+        props: {
+          lists: [baseShoppingList({ id: "list-1", name: "Groceries", order: 1, hiddenItemCount: 2 })],
+          loading: false,
+        },
+      });
+      expect(wrapper.text()).toContain("2 hidden by the current filter");
+    });
+
+    it("omits the filter hint when nothing is hidden", async () => {
+      layout.short = true;
+      const wrapper = await mountSuspended(GlobalList, {
+        props: { lists, loading: false },
+      });
+      expect(wrapper.text()).not.toContain("hidden by the current filter");
+    });
+
+    it("renders the full-width Add Item button otherwise", async () => {
+      const wrapper = await mountSuspended(GlobalList, {
+        props: { lists, loading: false, showAdd: true },
+      });
+      expect(wrapper.find("[aria-label=\"Add item to Groceries\"]").exists()).toBe(false);
+      expect(wrapper.text()).toContain("Add Item");
+    });
   });
 });

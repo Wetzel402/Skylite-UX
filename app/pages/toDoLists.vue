@@ -30,6 +30,7 @@ import type { ICalEvent } from "../../server/integrations/iCal/types";
 const { getStableDate, parseStableDate } = useStableDate();
 const { todoDueRange, todoSortBy, setTodoDueRange, setTodoSortBy } = useTodoPreferences();
 const { showSuccess, showError } = useAlertToast();
+const { pageHeaderClass } = useAppLayout();
 
 function getAppTimezone(): string {
   if (isTimezoneRegistered()) {
@@ -681,9 +682,10 @@ async function handleToggleTodo(itemId: string, completed: boolean) {
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-2rem)] w-full flex-col rounded-lg">
+  <div class="flex h-[calc(100dvh_-_2rem_-_var(--app-nav-offset))] w-full flex-col rounded-lg">
     <div
-      class="py-5 sm:px-4 sticky top-0 z-40 bg-default border-b border-default"
+      class="sticky top-0 z-40 bg-default border-b border-default"
+      :class="pageHeaderClass"
     >
       <GlobalDateHeader
         show-todo-sort-selector
@@ -693,28 +695,14 @@ async function handleToggleTodo(itemId: string, completed: boolean) {
         @todo-sort-change="setTodoSortBy"
         @todo-due-range-change="setTodoDueRange"
       />
-      <div
-        v-if="todoFilterSummary.hidden > 0"
-        role="status"
-        class="flex items-center gap-2 mt-2 text-sm text-muted"
-      >
-        <UIcon name="i-lucide-filter" class="h-4 w-4" />
-        <span>
+      <div role="status" class="sr-only">
+        <template v-if="todoFilterSummary.hidden > 0">
           Showing {{ todoFilterSummary.visible }} of {{ todoFilterSummary.total }} todos
-        </span>
-        <UButton
-          variant="link"
-          color="primary"
-          size="xs"
-          class="p-0"
-          @click="setTodoDueRange('all')"
-        >
-          Clear filter
-        </UButton>
+        </template>
       </div>
     </div>
 
-    <div class="flex flex-1 flex-col min-h-0 p-4">
+    <div class="flex flex-1 flex-col min-h-0">
       <GlobalList
         :lists="todoLists"
         :loading="columnsLoading || todosLoading"

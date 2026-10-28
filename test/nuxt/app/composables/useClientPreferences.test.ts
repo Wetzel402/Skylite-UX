@@ -23,7 +23,8 @@ vi.mock("@vueuse/core", async (importOriginal) => {
 const QUERIES = {
   portrait: "(orientation: portrait)",
   phone: "(max-width: 639px)",
-  short: "(max-height: 499px)",
+  short: "(max-height: 767px)",
+  phoneHeight: "(max-height: 499px)",
   coarse: "(pointer: coarse)",
   wide: "(min-width: 900px)",
 };
@@ -56,8 +57,17 @@ describe("useAppLayout", () => {
     });
 
     it("fills the screen on a phone in landscape", () => {
-      setScreen({ coarse: true, short: true });
+      setScreen({ coarse: true, short: true, phoneHeight: true });
       expect(useAppLayout().dialogPanelClass(WIDTH)).toContain("w-full h-dvh");
+    });
+
+    it("keeps a centred dialog on a small tablet in landscape", () => {
+      setScreen({ coarse: true, short: true });
+      const { dialogPanelClass, dialogBarClass, isShortScreen } = useAppLayout();
+      expect(isShortScreen.value).toBe(true);
+      expect(dialogPanelClass(WIDTH)).toContain("max-h-[90dvh]");
+      expect(dialogPanelClass(WIDTH)).not.toContain("w-full h-dvh");
+      expect(dialogBarClass.value).toBe("px-4 py-2");
     });
 
     it("uses the given width in a narrow desktop window", () => {
@@ -90,6 +100,17 @@ describe("useAppLayout", () => {
 
     it("uses default padding otherwise", () => {
       expect(useAppLayout().dialogBarClass.value).toBe("p-4");
+    });
+  });
+
+  describe("pageHeaderClass", () => {
+    it("uses compact padding on short screens", () => {
+      setScreen({ short: true });
+      expect(useAppLayout().pageHeaderClass.value).toBe("px-2 py-2 sm:px-4");
+    });
+
+    it("uses default padding otherwise", () => {
+      expect(useAppLayout().pageHeaderClass.value).toBe("px-2 py-3 sm:px-4 sm:py-5");
     });
   });
 });
